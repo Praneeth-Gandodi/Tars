@@ -1,0 +1,38 @@
+[
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get current weather information for a specific city or location",
+            "strict": false,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "place": {
+                        "type": "string",
+                        "description": "The name of the city (e.g., 'London', 'Tokyo')"
+                    }
+                },
+                "required": ["place"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_datetime",
+            "description": "Get the current date, time, day, and timezone from the user's system",
+            "strict": false,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Any string (not used, but required for function call)"
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    }
+]
