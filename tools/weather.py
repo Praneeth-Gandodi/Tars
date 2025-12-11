@@ -1,12 +1,10 @@
 import requests
-from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("Weather", json_response=True)
 
 url = "https://api.open-meteo.com/v1/forecast"
 place_url = "https://geocoding-api.open-meteo.com/v1/search"
 
-def get_weather(place):
+def get_weather(place="Tirupati"):
     """
     Retrieve current weather information for a given place using the Open-Meteo
     Geocoding API and Forecast API. This function is designed for use in an MCP
@@ -37,3 +35,4 @@ def get_weather(place):
     response = requests.get(url, params=params)
     data = response.json()
     return data['current_weather']
+

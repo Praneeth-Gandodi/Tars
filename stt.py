@@ -6,7 +6,6 @@ recorder = None
 def Audio(): 
     global conti
     global recorder
-    console.print("[green]Initializing Speech Engine...[/green]")
     if recorder is None:
         recorder = AudioToTextRecorder(
         model='small.en',
@@ -15,7 +14,7 @@ def Audio():
         compute_type="float32",
         min_gap_between_recordings= 2.0,
         )
-    console.print("[green]\nListening.......")
+    console.print("[green]\nListening..")
     text = recorder.text()
     print(f"You said: {text}") 
     cleaned_text = text.strip().rstrip('.!?,;:').lower()   
@@ -27,10 +26,11 @@ def Audio():
     return text
 
 if __name__ == "__main__":
-    console.print("[green]Speech engine is getting ready.")
+    console.print("[green dim]Speech engine is getting ready.[/green dim]")
+    console.print("[green dim]Activating Vocal Processing Unit[/green dim]")
     while conti:
         try:
             Audio()
         except KeyboardInterrupt:
-            console.log("[red]Quitting....")
+            console.print("\n[bold red]TARS SHUTDOWN SUCCESSFUL[/bold red]", justify="center")
 

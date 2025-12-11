@@ -2,15 +2,54 @@
     {
         "type": "function",
         "function": {
+            "name": "get_news",
+            "description": "Fetch top news headlines by category and country. ONLY use this when the user explicitly asks for news, current events, or headlines. Do not use for historical information or general knowledge questions.",
+            "strict": false,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "technology",
+                            "business",
+                            "entertainment",
+                            "health",
+                            "science",
+                            "sports",
+                            "general"
+                        ],
+                        "description": "The news category to fetch. Use 'technology' for tech news, 'business' for financial/business news, 'general' for top headlines across all categories.",
+                        "default": "general"
+                    },
+                    "country": {
+                        "type": "string",
+                        "enum": ["us", "in", "gb", "ca", "au", "de", "fr", "jp", "cn"],
+                        "description": "Two-letter country code (ISO 3166-1). Examples: 'us' for USA, 'in' for India, 'gb' for UK, 'ca' for Canada. Defaults to 'us' if not specified.",
+                        "default": "us"
+                    },
+                    "save_file": {
+                        "type": "boolean",
+                        "description": "Whether to save the news data to a JSON file. Set to true only if user explicitly asks to save or download the news.",
+                        "default": false
+                    }
+                },
+                "required": ["category"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_weather",
-            "description": "Get current weather information for a specific city or location",
+            "description": "Get current weather information for a specific city or location. ONLY use this when the user explicitly asks about weather, temperature, or forecast for a specific place.",
             "strict": false,
             "parameters": {
                 "type": "object",
                 "properties": {
                     "place": {
                         "type": "string",
-                        "description": "The name of the city (e.g., 'London', 'Tokyo')"
+                        "description": "The name of the city or location (e.g., 'London', 'Tokyo', 'New York')"
                     }
                 },
                 "required": ["place"]
@@ -21,17 +60,12 @@
         "type": "function",
         "function": {
             "name": "get_datetime",
-            "description": "Get the current date, time, day, and timezone from the user's system",
+            "description": "Get the current date, time, day of the week, and timezone. ONLY use this when the user explicitly asks what time it is, what date it is, or what day it is right now.",
             "strict": false,
             "parameters": {
                 "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "Any string (not used, but required for function call)"
-                    }
-                },
-                "required": ["query"]
+                "properties": {},
+                "required": []
             }
         }
     }
