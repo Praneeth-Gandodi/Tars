@@ -7,3 +7,5 @@ realtimesst.log
 test.py
 tools/__pycache__/
 tools/attendance.py 
+count_token.py
+notes.txt

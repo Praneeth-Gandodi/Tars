@@ -20,7 +20,7 @@
 ## Installation
 
 ### Prerequisites
-- Python 3.x
+- Python 3.13.x -- Tested in this environment 
 
 ### Clone the repo
 ```bash

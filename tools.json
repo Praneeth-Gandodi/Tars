@@ -68,5 +68,59 @@
                 "required": []
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "wiki_search",
+            "description": "Search Wikipedia for pages matching a given query. Returns a list of page titles that match the search term. Use this when the user wants to find Wikipedia articles or explore what pages are available on a topic.",
+            "strict": false,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "word": {
+                        "type": "string",
+                        "description": "The search term or query to look up on Wikipedia (e.g., 'Python programming', 'Albert Einstein')"
+                    }
+                },
+                "required": ["word"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "wiki_summary",
+            "description": "Get a brief summary of a Wikipedia page. Returns the first few sentences/paragraphs of the article. Use this when the user asks for a quick overview, summary, or basic information about a topic.",
+            "strict": false,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "word": {
+                        "type": "string",
+                        "description": "The exact Wikipedia page title or topic to get a summary for (e.g., 'Tirupati', 'Artificial Intelligence')"
+                    }
+                },
+                "required": ["word"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "wiki_content",
+            "description": "Retrieve the full content and title of a Wikipedia page. Returns a dictionary with 'title' and 'content' keys containing the complete article text. WARNING: This returns large amounts of text and may increase token usage significantly. Use wiki_summary instead unless the user explicitly needs the full article.",
+            "strict": false,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "word": {
+                        "type": "string",
+                        "description": "The exact Wikipedia page title to retrieve full content from (e.g., 'Python (programming language)')"
+                    }
+                },
+                "required": ["word"]
+            }
+        }
     }
 ]

@@ -7,6 +7,7 @@ from stt import Audio
 from tools.weather import get_weather
 from tools.DateTime import get_datetime
 from tools.news import get_news
+from tools.wiki import *
 
 
 load_dotenv()
@@ -36,7 +37,10 @@ Chat_completion = [
 available_functions = {
     "get_weather": get_weather, 
     "get_datetime": get_datetime,
-    "get_news": get_news
+    "get_news": get_news,
+    "wiki_search": wiki_search,
+    "wiki_summary": wiki_summary,
+    "wiki_content": wiki_content
 }
 
 ## AI responses
