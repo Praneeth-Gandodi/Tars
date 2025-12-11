@@ -80,7 +80,7 @@ python tars.py
 - [x] Weather  
 - [x] Date & Time  
 - [x] News (needs some changes)  
-- [ ] Wikipedia  
+- [x] Wikipedia  
 - [ ] Web search  
 - [ ] Spotify  
 - [ ] Application control  
