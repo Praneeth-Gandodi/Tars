@@ -34,5 +34,8 @@ def get_weather(place="Tirupati"):
     }
     response = requests.get(url, params=params)
     data = response.json()
-    return data['current_weather']
+    try:
+        return data['current_weather']
+    except Exception as e:
+        return [f"Error occured {e}"]
 

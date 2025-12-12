@@ -3,3 +3,5 @@ groq
 python-dotenv
 rich
 requests
+ddgs
+pathlib

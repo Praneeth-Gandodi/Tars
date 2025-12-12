@@ -28,6 +28,7 @@ def get_news(category, country, save_file=False):
             "title": article.get('title'),
             "description": article.get('description', 'No description'),
             "source": article.get('source', {}).get('name'),
+            "date": article.get('publishedAt')
         }
         for article in articles[:5]
     ]

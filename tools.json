@@ -1,126 +1,378 @@
 [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_news",
-            "description": "Fetch top news headlines by category and country. ONLY use this when the user explicitly asks for news, current events, or headlines. Do not use for historical information or general knowledge questions.",
-            "strict": false,
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "category": {
-                        "type": "string",
-                        "enum": [
-                            "technology",
-                            "business",
-                            "entertainment",
-                            "health",
-                            "science",
-                            "sports",
-                            "general"
-                        ],
-                        "description": "The news category to fetch. Use 'technology' for tech news, 'business' for financial/business news, 'general' for top headlines across all categories.",
-                        "default": "general"
-                    },
-                    "country": {
-                        "type": "string",
-                        "enum": ["us", "in", "gb", "ca", "au", "de", "fr", "jp", "cn"],
-                        "description": "Two-letter country code (ISO 3166-1). Examples: 'us' for USA, 'in' for India, 'gb' for UK, 'ca' for Canada. Defaults to 'us' if not specified.",
-                        "default": "us"
-                    },
-                    "save_file": {
-                        "type": "boolean",
-                        "description": "Whether to save the news data to a JSON file. Set to true only if user explicitly asks to save or download the news.",
-                        "default": false
-                    }
-                },
-                "required": ["category"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_weather",
-            "description": "Get current weather information for a specific city or location. ONLY use this when the user explicitly asks about weather, temperature, or forecast for a specific place.",
-            "strict": false,
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "place": {
-                        "type": "string",
-                        "description": "The name of the city or location (e.g., 'London', 'Tokyo', 'New York')"
-                    }
-                },
-                "required": ["place"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_datetime",
-            "description": "Get the current date, time, day of the week, and timezone. ONLY use this when the user explicitly asks what time it is, what date it is, or what day it is right now.",
-            "strict": false,
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "wiki_search",
-            "description": "Search Wikipedia for pages matching a given query. Returns a list of page titles that match the search term. Use this when the user wants to find Wikipedia articles or explore what pages are available on a topic.",
-            "strict": false,
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "word": {
-                        "type": "string",
-                        "description": "The search term or query to look up on Wikipedia (e.g., 'Python programming', 'Albert Einstein')"
-                    }
-                },
-                "required": ["word"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "wiki_summary",
-            "description": "Get a brief summary of a Wikipedia page. Returns the first few sentences/paragraphs of the article. Use this when the user asks for a quick overview, summary, or basic information about a topic.",
-            "strict": false,
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "word": {
-                        "type": "string",
-                        "description": "The exact Wikipedia page title or topic to get a summary for (e.g., 'Tirupati', 'Artificial Intelligence')"
-                    }
-                },
-                "required": ["word"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "wiki_content",
-            "description": "Retrieve the full content and title of a Wikipedia page. Returns a dictionary with 'title' and 'content' keys containing the complete article text. WARNING: This returns large amounts of text and may increase token usage significantly. Use wiki_summary instead unless the user explicitly needs the full article.",
-            "strict": false,
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "word": {
-                        "type": "string",
-                        "description": "The exact Wikipedia page title to retrieve full content from (e.g., 'Python (programming language)')"
-                    }
-                },
-                "required": ["word"]
-            }
-        }
+  {
+    "type": "function",
+    "function": {
+      "name": "get_news",
+      "description": "Fetch top news headlines by category and country. ONLY use this when the user explicitly asks for news, current events, or headlines. Do not use for historical information or general knowledge questions.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "technology",
+              "business",
+              "entertainment",
+              "health",
+              "science",
+              "sports",
+              "general"
+            ],
+            "description": "The news category to fetch. Use 'technology' for tech news, 'business' for financial/business news, 'general' for top headlines across all categories.",
+            "default": "general"
+          },
+          "country": {
+            "type": "string",
+            "enum": ["us", "in", "gb", "ca", "au", "de", "fr", "jp", "cn"],
+            "description": "Two-letter country code (ISO 3166-1). Examples: 'us' for USA, 'in' for India, 'gb' for UK, 'ca' for Canada. Defaults to 'us' if not specified.",
+            "default": "us"
+          },
+          "save_file": {
+            "type": "boolean",
+            "description": "Whether to save the news data to a JSON file. Set to true only if user explicitly asks to save or download the news.",
+            "default": false
+          }
+        },
+        "required": ["category"]
+      }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_weather",
+      "description": "Get current weather information for a specific city or location. ONLY use this when the user explicitly asks about weather, temperature, or forecast for a specific place.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "type": "string",
+            "description": "The name of the city or location (e.g., 'London', 'Tokyo', 'New York')"
+          }
+        },
+        "required": ["place"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_datetime",
+      "description": "Get the current date, time, day of the week, and timezone. ONLY use this when the user explicitly asks what time it is, what date it is, or what day it is right now.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "wiki_search",
+      "description": "Search Wikipedia for pages matching a given query. Returns a list of page titles that match the search term. Use this when the user wants to find Wikipedia articles or explore what pages are available on a topic.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "word": {
+            "type": "string",
+            "description": "The search term or query to look up on Wikipedia (e.g., 'Python programming', 'Albert Einstein')"
+          }
+        },
+        "required": ["word"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "wiki_summary",
+      "description": "Get a brief summary of a Wikipedia page. Returns the first few sentences/paragraphs of the article. Use this when the user asks for a quick overview, summary, or basic information about a topic.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "word": {
+            "type": "string",
+            "description": "The exact Wikipedia page title or topic to get a summary for (e.g., 'Tirupati', 'Artificial Intelligence')"
+          }
+        },
+        "required": ["word"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "wiki_content",
+      "description": "Retrieve the full content and title of a Wikipedia page. Returns a dictionary with 'title' and 'content' keys containing the complete article text. WARNING: This returns large amounts of text and may increase token usage significantly. Use wiki_summary instead unless the user explicitly needs the full article.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "word": {
+            "type": "string",
+            "description": "The exact Wikipedia page title to retrieve full content from (e.g., 'Python (programming language)')"
+          }
+        },
+        "required": ["word"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "web_search",
+      "description": "Perform a general web search (DuckDuckGo text search) for a given topic. Use this for general queries, recent information, or when other specific tools (like news or Wikipedia) are not suitable.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "The keywords or phrase to search for (e.g., 'latest stock market trends', 'history of Rome')"
+          },
+          "region": {
+            "type": "string",
+            "description": "Search results region code (e.g., 'us-en', 'uk-en', 'ru-ru'). Defaults to 'wt-wt' (worldwide).",
+            "default": "wt-wt"
+          },
+          "timelimit": {
+            "type": "string",
+            "enum": ["d", "w", "m", "y"],
+            "description": "Time limit for results: 'd' (day), 'w' (week), 'm' (month), 'y' (year). Defaults to None for no time limit."
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum number of search results to return. If not specified, returns results from the first response."
+          }
+        },
+        "required": ["topic"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "image_search",
+      "description": "Search DuckDuckGo for images related to a specific topic. Use this when the user explicitly asks for pictures, images, or visuals.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "The keywords or phrase for the image search (e.g., 'Eiffel Tower at night', 'abstract art backgrounds')"
+          },
+          "region": {
+            "type": "string",
+            "description": "Search results region code. Defaults to 'wt-wt' (worldwide)."
+          },
+          "size": {
+            "type": "string",
+            "enum": ["Small", "Medium", "Large", "Wallpaper"],
+            "description": "The desired image size filter."
+          },
+          "color": {
+            "type": "string",
+            "enum": ["color", "Monochrome", "Red", "Orange", "Yellow", "Green", "Blue", "Purple", "Pink", "Brown", "Black", "Gray", "Teal", "White"],
+            "description": "The dominant color filter for the images."
+          },
+          "type_image": {
+            "type": "string",
+            "enum": ["photo", "clipart", "gif", "transparent", "line"],
+            "description": "The type of image filter (e.g., photo, gif)."
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum number of image results to return. Defaults to 30.",
+            "default": 30
+          }
+        },
+        "required": ["topic"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "video_search",
+      "description": "Search DuckDuckGo for videos related to a topic. Use this when the user explicitly asks for videos or video content (e.g., 'YouTube tutorials', 'short film clips').",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "The keywords or phrase for the video search (e.g., 'cat videos', 'Python tutorial for beginners')"
+          },
+          "region": {
+            "type": "string",
+            "description": "Search results region code. Defaults to 'wt-wt' (worldwide)."
+          },
+          "timelimit": {
+            "type": "string",
+            "enum": ["d", "w", "m"],
+            "description": "Time limit for results: 'd' (day), 'w' (week), 'm' (month). Defaults to None."
+          },
+          "duration": {
+            "type": "string",
+            "enum": ["short", "medium", "long"],
+            "description": "The video duration filter."
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum number of video results to return."
+          }
+        },
+        "required": ["topic"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "news_search",
+      "description": "Search DuckDuckGo for news articles and current events matching a specific query. Use this for highly specific news searches that might not fit the general 'get_news' categories.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The specific keywords for the news search (e.g., 'local election results', 'company earnings report')"
+          },
+          "region": {
+            "type": "string",
+            "description": "Search results region code (e.g., 'us-en', 'uk-en'). Defaults to 'us-en'.",
+            "default": "us-en"
+          },
+          "timelimit": {
+            "type": "string",
+            "enum": ["d", "w", "m"],
+            "description": "Time limit for results: 'd' (day), 'w' (week), 'm' (month). Defaults to None."
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum number of news results to return."
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "yt_info",
+      "description": "Fetches basic information about a video from YouTube, Instagram, Facebook, or Reddit. Returns details like title, uploader, duration, views, thumbnail, and video format information. Use this to get metadata about a video without downloading it.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The full URL of the video (e.g., 'https://www.youtube.com/watch?v=...', 'https://www.instagram.com/p/...', 'https://www.facebook.com/watch?v=...', 'https://www.reddit.com/r/.../comments/...')"
+          }
+        },
+        "required": ["url"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "yt_videoDownload",
+      "description": "Downloads a YouTube video in the best available quality as MP4 format. Use this when the user explicitly asks to download or save a YouTube video.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "link": {
+            "type": "string",
+            "description": "The full YouTube video URL (e.g., 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')"
+          },
+          "location": {
+            "type": "string",
+            "description": "Subfolder name under the user's home directory where the video will be saved. Defaults to 'Downloads'.",
+            "default": "Downloads"
+          }
+        },
+        "required": ["link"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "yt_AudioDownload",
+      "description": "Downloads audio from a YouTube video in the best available quality, converted to MP3 format. Use this when the user asks to download just the audio or music from a YouTube video.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "link": {
+            "type": "string",
+            "description": "The full YouTube video URL (e.g., 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')"
+          },
+          "location": {
+            "type": "string",
+            "description": "Subfolder name under the user's home directory where the audio file will be saved. Defaults to 'Downloads'.",
+            "default": "Downloads"
+          }
+        },
+        "required": ["link"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "ig_download",
+      "description": "Downloads an Instagram video in the best available quality. Use this when the user explicitly asks to download or save an Instagram video, reel, or IGTV content.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "link": {
+            "type": "string",
+            "description": "The full Instagram video URL (e.g., 'https://www.instagram.com/p/...', 'https://www.instagram.com/reel/...')"
+          },
+          "location": {
+            "type": "string",
+            "description": "Subfolder name under the user's home directory where the video will be saved. Defaults to 'Downloads'.",
+            "default": "Downloads"
+          }
+        },
+        "required": ["link"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fb_download",
+      "description": "Downloads a Facebook video in the best available quality. Use this when the user explicitly asks to download or save a Facebook video.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "link": {
+            "type": "string",
+            "description": "The full Facebook video URL (e.g., 'https://www.facebook.com/watch?v=...', 'https://fb.watch/...')"
+          },
+          "location": {
+            "type": "string",
+            "description": "Subfolder name under the user's home directory where the video will be saved. Defaults to 'Downloads'.",
+            "default": "Downloads"
+          }
+        },
+        "required": ["link"]
+      }
+    }
+  }
 ]

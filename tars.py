@@ -28,6 +28,7 @@ def tars():
             return 
         if status.lower() == "summarize":
             console.print(summarize())
+        console.print("[bold green]>> TARS:[/bold green]", end=" ")
         md = Markdown(status)
         console.print(md)
         ccount += 1

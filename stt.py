@@ -6,6 +6,8 @@ recorder = None
 def Audio(): 
     global conti
     global recorder
+    console.print("[green dim]Speech engine is getting ready.[/green dim]")
+    console.print("[green dim]Activating Vocal Processing Unit[/green dim]")
     if recorder is None:
         recorder = AudioToTextRecorder(
         model='small.en',
@@ -26,8 +28,6 @@ def Audio():
     return text
 
 if __name__ == "__main__":
-    console.print("[green dim]Speech engine is getting ready.[/green dim]")
-    console.print("[green dim]Activating Vocal Processing Unit[/green dim]")
     while conti:
         try:
             Audio()

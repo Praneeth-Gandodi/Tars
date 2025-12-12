@@ -69,5 +69,8 @@ def wiki_summary(word):
         >>> print(summary[:50])
         'Artificial intelligence (AI) is intelligence...'
     """
-    return wikipedia.summary(word)
-
+    try:
+        text = wikipedia.summary(word)
+    except wikipedia.exceptions.PageError:
+        text = f"The work '{word}' does not match any pages."
+    return text

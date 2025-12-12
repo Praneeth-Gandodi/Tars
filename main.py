@@ -8,6 +8,8 @@ from tools.weather import get_weather
 from tools.DateTime import get_datetime
 from tools.news import get_news
 from tools.wiki import *
+from tools.websearch import *
+from tools.video_download import * 
 
 
 load_dotenv()
@@ -40,7 +42,16 @@ available_functions = {
     "get_news": get_news,
     "wiki_search": wiki_search,
     "wiki_summary": wiki_summary,
-    "wiki_content": wiki_content
+    "wiki_content": wiki_content,
+    "web_search":web_search,
+    "image_search":image_search,
+    "video_search":video_search,
+    "news_search": news_search,
+    "yt_info": yt_info,
+    "yt_videoDownload": yt_videoDownload,
+    "yt_AudioDownload" : yt_AudioDownload,
+    "ig_download": ig_download,
+    "fb_download": fb_download
 }
 
 ## AI responses
@@ -69,7 +80,6 @@ def get_ai(func):
         else:      
             final_text = response_message.content      
             print()
-            console.print("[bold green]>> TARS:[/bold green]", end=" ")
             Chat_completion.append({
                 "role": "assistant",
                 "content": final_text
@@ -101,19 +111,17 @@ def summarize():
     return chat
 
 ## Tools calling - This section has too many comments because i dont remeber this logic that well 
+
 def tool_calling(m_chat):
     console.print("Tool calling : ", style="dim")
-    ##Adding the history to the chat 
+    # Adding the history to the chat
     Chat_completion.append(m_chat)
     
-    # creting chat_buffer to collect the streaming reply
-    chat_buffer = ""
-    
-    ## gets tool name and execute the function
+    # Gets tool name and execute the function
     for tool_call in m_chat.tool_calls:
         function_name = tool_call.function.name
         
-        ##checking if that tool/function exists or not 
+        # Checking if that tool/function exists or not
         if function_name in available_functions:
             f_to_call = available_functions[function_name]
             if tool_call.function.arguments:
@@ -125,13 +133,13 @@ def tool_calling(m_chat):
             
             console.print(f"[cyan]Making a call to the tool {function_name} with the arguments {f_args}[/cyan]", style="dim")
             
-            ##Excecuting the function
+            # Executing the function
             function_response = f_to_call(**f_args)
-
-            ##Printing the functions response 
+            
+            # Printing the function's response
             console.print(function_response, style="dim")
             
-            ## Returning the actual conversation to the chat 
+            # Returning the actual conversation to the chat
             Chat_completion.append({
                 "role": "tool",
                 "tool_call_id": tool_call.id,
@@ -139,33 +147,40 @@ def tool_calling(m_chat):
                 "content": json.dumps(function_response)
             })
         else:
-            ## When the tool that model requested doesnt exist
+            # When the tool that model requested doesn't exist
             Chat_completion.append({
                 "role": "tool",
                 "tool_call_id": tool_call.id,
                 "name": function_name,
                 "content": json.dumps({"error": f"Function {function_name} not found"})
             })
-            
-        ## Making the second api call the LLM to give it the data 
-        console.print("[green dim]Processing the data[/green dim]")
-        console.print("\n[green]>> TARS:[/green]", end="")
-        stream = client.chat.completions.create(
-            messages=Chat_completion,
-            model=model,
-            stop= None,
-            stream = True
-        )
-        ## Getting the reply
-        for chuck in stream:
-            content = chuck.choices[0].delta.content
-            if  content:
-                chat_buffer += content
+    
+    # Making the second API call to give the data to the LLM
+    console.print("[green dim]Processing the data[/green dim]")
+    # First, make a non-streaming call to check if the model wants to use another tool
+    response = client.chat.completions.create(
+        messages=Chat_completion,
+        model=model,
+        tools=tools,
+        tool_choice="auto",
+        stop=None,
+        stream=False
+    )
+    
+    response_message = response.choices[0].message
+    
+    # If the model wants to use another tool, handle it recursively
+    if response_message.tool_calls:
+        console.print("\n[yellow]Model requesting another tool call...[/yellow]", style="dim")
+        return tool_calling(response_message)
+    else:
+        final_text = response_message.content
         Chat_completion.append({
-        "role": "assistant",
-        "content": chat_buffer
+            "role": "assistant",
+            "content": final_text
         })
-        return chat_buffer     
+        
+        return final_text  
 
 def text_input():
     inp = console.input("[green]>> You: [/green]")

@@ -81,7 +81,8 @@ python tars.py
 - [x] Date & Time  
 - [x] News (needs some changes)  
 - [x] Wikipedia  
-- [ ] Web search  
+- [x] Web search  
+- [x] Video Downloader(supports Youtube(Video/Audio), Instagram(Video), Facebook(Video))
 - [ ] Spotify  
 - [ ] Application control  
 - [ ] Text-to-Speech (TTS)  
