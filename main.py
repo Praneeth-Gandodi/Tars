@@ -1,6 +1,7 @@
 import os
 import json
-from dotenv import load_dotenv
+import sys
+from dotenv import load_dotenv, set_key
 from groq import Groq
 from rich.console import Console
 from stt import Audio
@@ -10,19 +11,68 @@ from tools.news import get_news
 from tools.wiki import *
 from tools.websearch import *
 from tools.video_download import * 
+from db import create_tables
+from db import (
+    save_user_message,
+    save_assistant_message,
+    save_tool_call,
+    save_tool_response,
+    get_or_create_model
+)
 
+
+create_tables()
 
 load_dotenv()
+
+    
 console = Console()
+
+
+if not os.getenv("groq_api"):
+    console.print("[red]Error: groq_api key not found in environment[/red]")
+    groq_api = console.input("[yellow]Enter your Groq API key : [/yellow]")
+    set_key(".env", "groq_api", groq_api)
+    console.print("[green]Api key added to the .env file successfully[/green]")
+    load_dotenv()
+if not os.getenv("model"):
+    console.print("[red]Error: Model not specified.[/red]")
+    model = console.input("[yellow]Model ID ([link=https://console.groq.com/docs/models][blue underline]list[/blue underline][/link], blank = default): [/yellow]")
+    if model:
+        set_key(".env", "model", model)
+        console.print(f"[green]{model} model is set successfully.")
+        load_dotenv()
+    else:
+        model = "openai/gpt-oss-120b"
+        set_key(".env", "model", model)
+        console.print(f"[green]Default model: {model} is set successfully.")
+        load_dotenv()
+
+
+## Clearing the screen
+
+if os.name == "nt":
+    os.system("cls")
+else:
+    os.system("clear")
+
+
+
+
 client = Groq(api_key=os.getenv("groq_api"))
 model = os.getenv("model")
 ccount = 0
 chat = ""
 
 ## Loading json
-with open('./tools.json', 'r') as f:
-    tools = json.load(f)
-
+try:
+    with open('./tools.json', 'r') as f:
+        tools = json.load(f)
+except FileNotFoundError:
+    console.print("[red]Error: tools.json does not exist[/red]")
+    sys.exit()
+except json.JSONDecodeError as e:
+    console.print()
 ## Chat History 
 Chat_completion = [
     {
@@ -53,51 +103,76 @@ available_functions = {
     "ig_download": ig_download,
     "fb_download": fb_download
 }
+## Creates model id for logging in the models table 
+model_id = get_or_create_model(provider="groq", model_name=os.getenv("model"))
 
+user_conversation_id = None
 ## AI responses
 def get_ai(func):
     global Chat_completion
+    global user_conversation_id
     while True:
         user_input = func()
         if user_input.lower() in["q", "quit", "exit", "stop"]:
             return "exit"
-        Chat_completion.append({"role": "user",
-                                "content": user_input}
-                            )
-        response = client.chat.completions.create(
-            messages = Chat_completion,
-            model = model,
-            tools = tools,
-            tool_choice="auto",
-            stop = None,
-            stream = False
-        )
+        
+        ## Saved to in-memory chat completions
+        Chat_completion.append(
+            {"role": "user",
+            "content": user_input})
+        ## Saved to db for conversation storage
+        user_conversation_id = save_user_message(user_input)
+        try:
+            response = client.chat.completions.create(
+                messages = Chat_completion,
+                model = model,
+                tools = tools,
+                tool_choice="auto",
+                stop = None,
+                stream = False
+            )
+        except Exception as e:
+            console.print(f"Exception : {e}")
         response_message = response.choices[0].message
         final_text = ""
-        if response_message.tool_calls:
+        if response_message.tool_calls:           
             final_text = tool_calling(response_message)
             return final_text
         else:      
             final_text = response_message.content      
-            print()
+
+            # Save to in-memory
             Chat_completion.append({
                 "role": "assistant",
                 "content": final_text
-            })
+                })
+
+            # Save to DB
+            assitant_cid = save_assistant_message(final_text, model_id=model_id)
+
             return final_text
   
 ## Chat Summarizer    
-def summarize():
+def summarize(custom_prompt = None):
     global Chat_completion
     global ccount
-    Chat_completion.append({"role": "user",
-                            "content":"Summarize our previous conversation in few concise sentences. Focus only on the factual information discussed. Do not add roleplay elements, character references, or fictional context."}
-                        )
-    cresponse = client.chat.completions.create(
-        messages = Chat_completion,
-        model = model
+    if custom_prompt:
+        prompt = custom_prompt
+    else:
+        prompt = "Summarize our previous conversation in few concise sentences. Focus only on the factual information discussed. Do not add roleplay elements, character references, or fictional context."
+    Chat_completion.append(
+        {"role": "user",
+        "content":prompt
+        }
     )
-    chat = cresponse.choices[0].message.content
+    try:
+        cresponse = client.chat.completions.create(
+            messages = Chat_completion,
+            model = model
+        )
+    except Exception as e:
+        console.print(f"Exception occcured {e}")
+    chat_summary = cresponse.choices[0].message.content
         
     Chat_completion = [
     {"role": "system",
@@ -105,14 +180,17 @@ def summarize():
     ]
     Chat_completion.append({
     "role": "assistant",
-    "content": chat
+    "content": chat_summary
     })
-    console.print("[green] Automatic Summarizer", justify="center")
-    return chat
+    
+    console.print("[green] Automatic Summarizer", justify="center", style="dim")
+
+    return chat_summary
 
 ## Tools calling - This section has too many comments because i dont remeber this logic that well 
 
 def tool_calling(m_chat):
+    global user_conversation_id
     console.print("Tool calling : ", style="dim")
     # Adding the history to the chat
     Chat_completion.append(m_chat)
@@ -130,12 +208,23 @@ def tool_calling(m_chat):
                     f_args = parsed if isinstance(parsed, dict) else {}
                 except:
                     f_args = {}
-            
-            console.print(f"[cyan]Making a call to the tool {function_name} with the arguments {f_args}[/cyan]", style="dim")
-            
+
+            # Save the tool call first
+            tool_call_id = save_tool_call(
+            tool_name=function_name,
+            arguments_json=json.dumps(f_args),
+            trigger_conversation_id=user_conversation_id
+            )
+    
+            console.print(f"[dark_sea_green4]Making a call to the tool [bright_green]\"{function_name}\" function [/bright_green]with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4]", style="dim")
             # Executing the function
-            function_response = f_to_call(**f_args)
-            
+            try:
+                function_response = f_to_call(**f_args)
+            except TypeError as e:
+                function_response = f"Error: Invalid arguements passed for the function {e}"
+            except Exception as e:
+                function_response = f"Error: An Exception occured {e}"
+                
             # Printing the function's response
             console.print(function_response, style="dim")
             
@@ -146,6 +235,9 @@ def tool_calling(m_chat):
                 "name": function_name,
                 "content": json.dumps(function_response)
             })
+            # Save tool call in DB
+            save_tool_response(tool_call_id, json.dumps(function_response)) 
+
         else:
             # When the tool that model requested doesn't exist
             Chat_completion.append({
@@ -158,15 +250,18 @@ def tool_calling(m_chat):
     # Making the second API call to give the data to the LLM
     console.print("[green dim]Processing the data[/green dim]")
     # First, make a non-streaming call to check if the model wants to use another tool
-    response = client.chat.completions.create(
-        messages=Chat_completion,
-        model=model,
-        tools=tools,
-        tool_choice="auto",
-        stop=None,
-        stream=False
-    )
-    
+    try:
+        response = client.chat.completions.create(
+            messages=Chat_completion,
+            model=model,
+            tools=tools,
+            tool_choice="auto",
+            stop=None,
+            stream=False
+        )
+    except Exception as e:
+        console.print(f"Exception occured: {e}")
+        
     response_message = response.choices[0].message
     
     # If the model wants to use another tool, handle it recursively
@@ -179,7 +274,8 @@ def tool_calling(m_chat):
             "role": "assistant",
             "content": final_text
         })
-        
+        #Save assistant message to the db 
+        save_assistant_message(final_text, model_id=model_id)
         return final_text  
 
 def text_input():

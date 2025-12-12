@@ -8,15 +8,20 @@ def Audio():
     global recorder
     console.print("[green dim]Speech engine is getting ready.[/green dim]")
     console.print("[green dim]Activating Vocal Processing Unit[/green dim]")
-    if recorder is None:
-        recorder = AudioToTextRecorder(
-        model='small.en',
-        language='en',
-        device="cpu", 
-        compute_type="float32",
-        min_gap_between_recordings= 2.0,
-        )
-    console.print("[green]\nListening..")
+    try:
+        if recorder is None:
+            recorder = AudioToTextRecorder(
+            model='small.en',
+            language='en',
+            device="cpu", 
+            compute_type="float32",
+            min_gap_between_recordings= 2.0,
+            )
+        console.print("[green]\nListening..")
+    except Exception as e:
+        console.print(f"[/red]Error: Failed to initialize recorder {e}[/red]")
+        console.input("[yellow]Falling back to text input.[/yellow]")
+        return None
     text = recorder.text()
     print(f"You said: {text}") 
     cleaned_text = text.strip().rstrip('.!?,;:').lower()   
