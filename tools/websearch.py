@@ -10,7 +10,7 @@ def web_search(
     safesearch="moderate",
     timelimit=None,
     backend="auto",
-    max_results=None
+    max_results=5
 ):
     """DuckDuckGo text search generator. Query params: https://duckduckgo.com/params.
 
@@ -55,7 +55,7 @@ def image_search(
     type_image=None,
     layout=None,
     license_image = None,
-    max_results=30
+    max_results=5
 ):
     """DuckDuckGo images search. Query params: https://duckduckgo.com/params.
 
@@ -107,7 +107,7 @@ def video_search(
     resolution=None,
     duration=None,
     license_videos=None,
-    max_results=None    
+    max_results=5    
 ):
     """DuckDuckGo videos search. Query params: https://duckduckgo.com/params.
 
@@ -148,7 +148,7 @@ def news_search(
     region = "us-en",
     safesearch = "off",
     timelimit = None,
-    max_results = None,
+    max_results = 5,
 ):
     """DuckDuckGo news search. Query params: https://duckduckgo.com/params.
 

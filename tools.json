@@ -201,7 +201,7 @@
     "type": "function",
     "function": {
       "name": "video_search",
-      "description": "Search DuckDuckGo for videos related to a topic. Use this when the user explicitly asks for videos or video content (e.g., 'YouTube tutorials', 'short film clips').",
+      "description": "Search DuckDuckGo for videos related to a topic. Use this when the user explicitly asks for videos or video content (e.g., 'YouTube tutorials', 'short film clips').Also Search when the user wants to download a video and didnt provide any link",
       "strict": false,
       "parameters": {
         "type": "object",
@@ -287,7 +287,7 @@
     "type": "function",
     "function": {
       "name": "yt_videoDownload",
-      "description": "Downloads a YouTube video in the best available quality as MP4 format. Use this when the user explicitly asks to download or save a YouTube video.",
+      "description": "Downloads a YouTube video in the best available quality as MP4 format if user didnt provide any link use the video search tool to search the video and then downlaod. Use this when the user explicitly asks to download or save a YouTube video.",
       "strict": false,
       "parameters": {
         "type": "object",
@@ -372,6 +372,127 @@
           }
         },
         "required": ["link"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_files_in_directory",
+      "description": "Lists all files in a specific directory relative to the home folder.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "directory": { "type": "string", "description": "The directory path to list files from." }
+        },
+        "required": ["directory"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_files_by_types",
+      "description": "Lists files in a directory that match a specific file extension.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "directory": { "type": "string" },
+          "ext": { "type": "string", "description": "The file extension (e.g., 'pdf', 'txt')." }
+        },
+        "required": ["directory", "ext"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "read_file_content",
+      "description": "Reads and returns the text content of various file types (txt, pdf, docx, json, etc.).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "directory": { "type": "string", "description": "Path to the file including filename." }
+        },
+        "required": ["directory"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "write_to_files",
+      "description": "Writes or appends text content to a file. Overwrites by default.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "directory": { "type": "string", "description": "Path to the file." },
+          "content": { "type": "string", "description": "Text to write." },
+          "mode": { "type": "string", "enum": ["w", "a"], "default": "w", "description": "'w' for write, 'a' for append." }
+        },
+        "required": ["directory", "content"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "write_docx",
+      "description": "Creates or appends text to a Microsoft Word (.docx) file.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "directory": { "type": "string" },
+          "content": { "type": "string" },
+          "append": { "type": "string", "enum": ["w", "a"], "description": "'w' to create/overwrite, 'a' to add to existing." }
+        },
+        "required": ["directory", "content", "append"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "recursive_file_search",
+      "description": "Searches for a file by name throughout the directory tree.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filename": { "type": "string", "description": "The name or part of the name of the file." },
+          "start_dir": { "type": "string", "description": "Starting directory for the search. Defaults to home." }
+        },
+        "required": ["filename"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "open_file",
+      "description": "Opens a file using the system's default application. Works across Windows, macOS, and Linux. Use this when the user wants to physically launch or view a file on their computer.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Relative path to the file that needs to be opened (e.g., 'Documents/report.pdf' or 'notes.txt')."
+          }
+        },
+        "required": ["path"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "clear_console",
+      "description": "Clears the terminal or console screen. Use this when the user wants to wipe the current command history from view to start with a clean screen.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
       }
     }
   }

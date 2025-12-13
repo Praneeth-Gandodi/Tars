@@ -31,8 +31,7 @@ def create_tables():
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     provider TEXT NOT NULL,
     model_name TEXT NOT NULL,
-    model_version TEXT NULL,
-    UNIQUE(provider, model_name, model_version)    
+    UNIQUE(provider, model_name)    
     );
     """
     )
@@ -66,10 +65,28 @@ def create_tables():
     """
     )
     
+    ## Create session table.
+    ## Stores conversation id and conversatinos based on sessions.
+    cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        start_time DATETIME DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now')),
+        end_time DATETIME NULL,
+        title TEXT NULL,
+        message_count INTEGER DEFAULT NULL,
+        model_id INTEGER NULL,
+        is_active BOOLEAN DEFAULT 1,
+        FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE SET NULL
+    );
+    """
+    )
+    
     ## Conversation table - main table of messages contains main things like messages and tool calls
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id INTEGER NOT NULL,
         timestamp DATETIME DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now')),
         role TEXT NOT NULL CHECK(role IN ('user','assistant','tool','system')),
         content TEXT,
@@ -110,7 +127,7 @@ def create_tables():
     conn.close()
 
 ## Function that saves model details into the models table.
-def get_or_create_model(provider: str, model_name: str, version:str = None):
+def get_or_create_model(provider: str, model_name: str):
     """
     Make sure a model exists in the db.    
     Args:
@@ -124,27 +141,30 @@ def get_or_create_model(provider: str, model_name: str, version:str = None):
     cursor = conn.cursor()
 
     cursor.execute(
-    """
-    INSERT OR IGNORE INTO models (provider, model_name , model_version)
-    VALUES (?, ?, ?)
-    """, (provider, model_name, version)
+        """
+        SELECT id FROM models
+        WHERE provider = ? AND model_name = ?
+        """, (provider, model_name)
     )
-    conn.commit()
-
+    row = cursor.fetchone()
+    if row:
+        conn.close()
+        return row['id']
+    
     cursor.execute(
     """
-    SELECT id from models
-    WHERE provider = ? AND model_name = ? AND model_version IS ?
-    """, (provider, model_name, version)
+    INSERT OR IGNORE INTO models (provider, model_name)
+    VALUES (?, ?)
+    """, (provider, model_name)
     )
-    
-    row = cursor.fetchone()
+    conn.commit()
+    row = cursor.lastrowid
     conn.close()
 
-    return row["id"] if row else None
+    return row
 
 ## Function that saves user messages 
-def save_user_message(text: str, user_id: int = None):
+def save_user_message(text: str,  session_id:int , user_id: int = None, model_id:int = None):
     """
     Insert a user message and return the conversation_id.
     Args:
@@ -156,20 +176,27 @@ def save_user_message(text: str, user_id: int = None):
     """
     conn = get_connection()
     cursor = conn.cursor()
+    try:
+        cursor.execute(
+        """
+        INSERT INTO conversations(session_id, role, content, user_id, model_id)
+        VALUES (?, 'user', ?, ?, ?)
+        """, (session_id, text, user_id, model_id)
+        )
+        conn.commit()
+        cid = cursor.lastrowid
+        update_session_messag_Count(session_id)
+        return cid
+    except Exception as e:
+        conn.rollback()
+        print(f"Error saving the message: {e}")
+        return None
+    finally:
+        conn.close()
 
-    cursor.execute(
-    """
-    INSERT INTO conversations(role, content, user_id)
-    VALUES ('user', ? ,?)
-    """, (text, user_id)
-    )
-    conn.commit()
-    cid = cursor.lastrowid
-    conn.close()
-    return cid
   
 ## Function that saves the LLM replies/content.    
-def save_assistant_message(text: str, model_id: int = None):
+def save_assistant_message(text: str, session_id:int , model_id: int = None):
     """
     Insert an assistant message and link it to the model it generated it 
     Args:
@@ -180,20 +207,27 @@ def save_assistant_message(text: str, model_id: int = None):
     """
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute(
-    """
-    INSERT INTO conversations (role, content, model_id)
-    VALUES ('assistant', ?, ?)
-    """, (text, model_id)
-    )
-    conn.commit()
-    aid = cursor.lastrowid
-    conn.close()
+    try:
+        cursor.execute(
+        """
+        INSERT INTO conversations (session_id, role, content, model_id)
+        VALUES (?, 'assistant', ?, ?)
+        """, (session_id, text, model_id)
+        )
+        conn.commit()
+        aid = cursor.lastrowid
+        update_session_messag_Count(session_id)
+        return aid
+    except Exception as e:
+        conn.rollback()
+        print(f"Error saving the assistant message {e}")
+    finally:
+        conn.close()
 
-    return aid
+    
 
 ## Insert tools calls into the table. BEFORE RUNNING TOOL
-def save_tool_call(tool_name: str, arguments_json: str, trigger_conversation_id: int = None):
+def save_tool_call(tool_name: str, arguments_json: str, session_id:int ,trigger_conversation_id: int = None):
     """
     Insert a tool call into the table BEFORE running the tool.
     Args:
@@ -203,42 +237,62 @@ def save_tool_call(tool_name: str, arguments_json: str, trigger_conversation_id:
     """
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute(
-    """
-    INSERT INTO tool_calls (tool_name, arguments, conversation_id)
-    VALUES (?,?,?)
-    """, (tool_name, arguments_json, trigger_conversation_id)
-    )
-    conn.commit()
-    tid = cursor.lastrowid
-    conn.close
+    try:
+        cursor.execute(
+        """
+        INSERT INTO tool_calls (tool_name, arguments, conversation_id)
+        VALUES (?,?,?)
+        """, (tool_name, arguments_json, trigger_conversation_id)
+        )
+        conn.commit()
+        tid = cursor.lastrowid
+        update_session_messag_Count(session_id)
     
-    return tid
+        return tid
+    except Exception as e:
+        conn.rollback()
+        print(f"Error saving the tool call {e}")
+    finally:
+        conn.close()
 
-def save_tool_response(tool_call_id: int, response_text: str):
+def save_tool_response(tool_call_id: int, response_text: str, session_id:int, model_id:int = None):
     """
     Saves tool reponse AND creates a conversation row with role='tool'
     Args:
         tool_call_id (int): The id we get when we save a tool call (id that returns when the save_tool_call function is called)
         response_text (str): what did the tool responded.
+        session_id(int): Session id of the session in which tools is used.
+        model_id (int): Model id of the session it used.
     Returns:
         cid (int): Returns the id of the save_tool_response
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute(
-    """
-    INSERT INTO conversations (role, content, tool_call_id)
-    VALUES ('tool', ?, ?)
-    """, (response_text, tool_call_id)
-    )
-    
-    conn.commit()
-    cid = cursor.lastrowid
-    conn.close()
-
-    return cid
+    try:
+        cursor.execute(
+            """
+            UPDATE tool_calls
+            SET response = ?
+            WHERE id = ?
+            """, (response_text, tool_call_id)
+        )
+        cursor.execute(
+        """
+        INSERT INTO conversations (session_id, role, content, tool_call_id, model_id)
+        VALUES (?, 'tool', ?, ?, ?)
+        """, (session_id, response_text, tool_call_id, model_id)
+        )
+        
+        conn.commit()
+        cid = cursor.lastrowid
+        return cid
+    except Exception as e:
+        conn.rollback()
+        print(f"Error saving tool response: {e}")
+        return None
+    finally:
+        conn.close()
 
 ## Function to get last N messages 
 def get_last_messages(limit: int = 20):
@@ -286,3 +340,216 @@ def save_media_file(conversation_id: int, file_path: str, file_type: str, metada
     mid = cur.lastrowid
     conn.close()
     return mid
+
+def create_new_session(model_id , title=None):
+    """
+    Creates new session should pass model_id 
+    Args:
+        model_id (_type_): _description_
+        title (_type_, optional): _description_. Defaults to None.
+    Returns:
+        session_id (int): The Id of the newly created session.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+        """
+        INSERT INTO sessions (model_id, title, is_active)
+        VALUES (?, ?, 1)
+        """, (model_id, title)
+            )
+        conn.commit()
+        session_id = cursor.lastrowid
+        return session_id
+    except Exception as e:
+        conn.rollback()
+        print("Error creating the session.")
+        return None
+    finally:
+        conn.close()
+    
+        
+
+def get_session_by_id(session_id):
+    """
+    Returns session details by session ID.
+    
+    Args:
+        session_id: The ID of the session to retrieve
+    
+    Returns:
+        dict: Session details or None if not found
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute(
+            """
+            SELECT 
+                s.id,
+                s.start_time,
+                s.end_time,
+                s.title,
+                s.message_count,
+                s.is_active,
+                m.model_name,
+                m.provider
+            FROM sessions s
+            LEFT JOIN models m ON s.model_id = m.id
+            WHERE s.id = ?
+            """,
+            (session_id,)
+        )
+        row = cursor.fetchone()
+        
+        if row:
+            return {
+                'id': row['id'],
+                'start_time': row['start_time'],
+                'end_time': row['end_time'],
+                'title': row['title'],
+                'message_count': row['message_count'],
+                'is_active': row['is_active'],
+                'model_name': row['model_name'],
+                'provider': row['provider']
+            }
+        return None
+    except Exception as e:
+        print(f"Error getting session: {e}")
+        return None
+    finally:
+        conn.close()
+        
+## Gets all sessions.
+def get_all_session(limit = 20):
+    """
+    Get last 20 sessions or for N last sessions if limit is passed.
+    Args:
+        limit (int, optional): Maximum number of sessions to return.. Defaults to 20.
+    Returns:
+        list : List of seesion dictionaries.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute(
+            """
+            SELECT 
+                s.id,
+                s.start_time,
+                s.end_time,
+                s.title,
+                s.message_count,
+                s.is_active,
+                m.model_name,
+                m.provider
+            FROM sessions s
+            LEFT JOIN models m ON s.model_id = m.id
+            ORDER BY s.start_time DESC
+            LIMIT ?
+            """,
+            (limit,)
+        )
+        rows = cursor.fetchall()
+        
+        sessions = []
+        for row in rows:
+            sessions.append({
+                'id': row['id'],
+                'start_time': row['start_time'],
+                'end_time': row['end_time'],
+                'title': row['title'],
+                'message_count': row['message_count'],
+                'is_active': row['is_active'],
+                'model_name': row['model_name'],
+                'provider': row['provider']
+            })
+        return sessions
+    except Exception as e:
+        print(f"Error getting sessions: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+def end_session(session_id):
+    """
+    Marks session as ended and sets end_time.
+    
+    Args:
+        session_id: The ID of the session to end
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute(
+            """
+            UPDATE sessions
+            SET end_time = strftime('%Y-%m-%d %H:%M:%f', 'now'),
+                is_active = 0
+            WHERE id = ?
+            """,
+            (session_id,)
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        conn.rollback()
+        print(f"Error ending session: {e}")
+        return False
+    finally:
+        conn.close()
+
+def update_session_messag_Count(session_id):
+    """
+    Updates the message count for a session by counting 
+    user and assistant messages.
+    
+    Args:
+        session_id: The ID of the session to update
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Count user and assistant messages only
+        cursor.execute(
+            """
+            SELECT COUNT(*) as count
+            FROM conversations
+            WHERE session_id = ?
+            AND role IN ('user', 'assistant')
+            """,
+            (session_id,)
+        )
+        row = cursor.fetchone()
+        message_count = row['count'] if row else 0
+        
+        # Update the session
+        cursor.execute(
+            """
+            UPDATE sessions
+            SET message_count = ?
+            WHERE id = ?
+            """,
+            (message_count, session_id)
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        conn.rollback()
+        print(f"Error updating message count: {e}")
+        return False
+    finally:
+        conn.close()

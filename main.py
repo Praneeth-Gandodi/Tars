@@ -11,13 +11,18 @@ from tools.news import get_news
 from tools.wiki import *
 from tools.websearch import *
 from tools.video_download import * 
+from tools.file_handler import *
+from supporter import *
 from db import create_tables
 from db import (
     save_user_message,
     save_assistant_message,
     save_tool_call,
     save_tool_response,
-    get_or_create_model
+    get_or_create_model,
+    create_new_session,
+    end_session,
+    get_session_by_id
 )
 
 
@@ -49,22 +54,14 @@ if not os.getenv("model"):
         load_dotenv()
 
 
-## Clearing the screen
-
-if os.name == "nt":
-    os.system("cls")
-else:
-    os.system("clear")
-
-
-
 
 client = Groq(api_key=os.getenv("groq_api"))
 model = os.getenv("model")
 ccount = 0
 chat = ""
+current_session_id = None
 
-## Loading json
+
 try:
     with open('./tools.json', 'r') as f:
         tools = json.load(f)
@@ -73,7 +70,8 @@ except FileNotFoundError:
     sys.exit()
 except json.JSONDecodeError as e:
     console.print()
-## Chat History 
+
+
 Chat_completion = [
     {
     "role": "system",
@@ -85,43 +83,32 @@ Chat_completion = [
     }
 ]
 
-## Available Functions
-available_functions = {
-    "get_weather": get_weather, 
-    "get_datetime": get_datetime,
-    "get_news": get_news,
-    "wiki_search": wiki_search,
-    "wiki_summary": wiki_summary,
-    "wiki_content": wiki_content,
-    "web_search":web_search,
-    "image_search":image_search,
-    "video_search":video_search,
-    "news_search": news_search,
-    "yt_info": yt_info,
-    "yt_videoDownload": yt_videoDownload,
-    "yt_AudioDownload" : yt_AudioDownload,
-    "ig_download": ig_download,
-    "fb_download": fb_download
-}
-## Creates model id for logging in the models table 
+available_functions = available_functions
+
+
 model_id = get_or_create_model(provider="groq", model_name=os.getenv("model"))
 
 user_conversation_id = None
+
 ## AI responses
 def get_ai(func):
     global Chat_completion
     global user_conversation_id
+    global current_session_id
+    global model_id
     while True:
         user_input = func()
         if user_input.lower() in["q", "quit", "exit", "stop"]:
+            end_session(current_session_id)
             return "exit"
         
         ## Saved to in-memory chat completions
         Chat_completion.append(
             {"role": "user",
             "content": user_input})
+        
         ## Saved to db for conversation storage
-        user_conversation_id = save_user_message(user_input)
+        user_conversation_id = save_user_message(user_input, current_session_id, model_id=model_id)
         try:
             response = client.chat.completions.create(
                 messages = Chat_completion,
@@ -141,14 +128,14 @@ def get_ai(func):
         else:      
             final_text = response_message.content      
 
-            # Save to in-memory
+
             Chat_completion.append({
                 "role": "assistant",
                 "content": final_text
                 })
 
             # Save to DB
-            assitant_cid = save_assistant_message(final_text, model_id=model_id)
+            assitant_cid = save_assistant_message(final_text, current_session_id, model_id=model_id)
 
             return final_text
   
@@ -187,12 +174,14 @@ def summarize(custom_prompt = None):
 
     return chat_summary
 
-## Tools calling - This section has too many comments because i dont remeber this logic that well 
-
+## Tools calling - This section has too many comments because i dont remeber this logic that well.
 def tool_calling(m_chat):
     global user_conversation_id
+    global current_session_id
+    global model_id
     console.print("Tool calling : ", style="dim")
-    # Adding the history to the chat
+    
+    
     Chat_completion.append(m_chat)
     
     # Gets tool name and execute the function
@@ -213,6 +202,7 @@ def tool_calling(m_chat):
             tool_call_id = save_tool_call(
             tool_name=function_name,
             arguments_json=json.dumps(f_args),
+            session_id=current_session_id,
             trigger_conversation_id=user_conversation_id
             )
     
@@ -225,7 +215,7 @@ def tool_calling(m_chat):
             except Exception as e:
                 function_response = f"Error: An Exception occured {e}"
                 
-            # Printing the function's response
+
             console.print(function_response, style="dim")
             
             # Returning the actual conversation to the chat
@@ -235,8 +225,9 @@ def tool_calling(m_chat):
                 "name": function_name,
                 "content": json.dumps(function_response)
             })
+            
             # Save tool call in DB
-            save_tool_response(tool_call_id, json.dumps(function_response)) 
+            save_tool_response(tool_call_id, json.dumps(function_response), current_session_id, model_id) 
 
         else:
             # When the tool that model requested doesn't exist
@@ -249,7 +240,8 @@ def tool_calling(m_chat):
     
     # Making the second API call to give the data to the LLM
     console.print("[green dim]Processing the data[/green dim]")
-    # First, make a non-streaming call to check if the model wants to use another tool
+    
+    # First, make a non streaming call to check if the model wants to use another tool
     try:
         response = client.chat.completions.create(
             messages=Chat_completion,
@@ -274,8 +266,9 @@ def tool_calling(m_chat):
             "role": "assistant",
             "content": final_text
         })
+        
         #Save assistant message to the db 
-        save_assistant_message(final_text, model_id=model_id)
+        save_assistant_message(final_text, current_session_id, model_id=model_id)
         return final_text  
 
 def text_input():

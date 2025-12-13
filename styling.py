@@ -1,7 +1,7 @@
 from rich.console import Console
 from rich.markdown import Markdown
 from dotenv import load_dotenv
-from main import available_functions
+from supporter import clear_console
 import os
 
 load_dotenv()
@@ -9,10 +9,11 @@ model = os.getenv("model")
 console = Console()
 
 def starting():
+    clear_console()
     console.print("[bold cyan] TARS AI ASSISTANT[bold cyan]", justify="center")
     console.print("[green]● System status: Online[/green]")
     console.print(f"[green]● Model: {model}[/green]")
-    console.print(f"[green]● Tools Available: {', '.join(available_functions)}[/green]")
+    console.print(f"[green]● Tools Available: Websearch, Wikipedia, Video Downloader, News, Weather, Datetime,File Handling, Open Files")
     print()
     
 def input_type():

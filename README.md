@@ -2,21 +2,26 @@
 
 **TARS** is an **early-stage Voice AI Assistant** built to process **Speech-to-Text (STT)** input and generate comprehensive **Text-based** responses. It currently integrates features like weather, news and time retrieval along with conversation tracking. **Text-to-Speech (TTS) integration is planned for a future release.**.
 
---
+---
 
 ## Features
 
-- **Speech-to-Text (STT)** Processing for voice input.
-- **Text-to-Text**Can chat with the model directly
+- **Speech-to-Text (STT)** Processing for voice input
+- **Text-to-Text** Can chat with the model directly
 - Text-based Responses (**TTS to be added later**)
 - **Integrated Tools:**
     1. **Weather Tool** – Fetches current weather
     2. **Date & Time Tool** – Fetches current date and time
     3. **News** - Fetches news based on country and categories
+    4. **Wikipedia** - Can do wikipedia Search, Summary and Content(Using tool will consume a lot of tokens.)
+    5. **Websearch** - Uses DuckDuckGo library. This tool can search for Pages, Images, Videos and news (Try to set the max_results to low to reduce high token consumption)
+    6. **News** - Uses NewsAPI from this [`repo`](https://github.com/SauravKanchan/NewsAPI) so the news may and may not always be up to date (So use the `news_search` tool to get latest news)
+    7. **Video Downloader** - Can download Youtube(Video/Audio), Facebook, Instagram Videos (Use this carefully, and do not download copyrighted content.)
+    8. **SQLite3** – Uses Python’s sqlite3 module for the database for the data persistant.
 - Conversation history tracking
 - Automatic conversation summarization
 
---
+---
 
 ## Installation
 
@@ -96,7 +101,7 @@ python tars.py
 
 - [x] Weather  
 - [x] Date & Time  
-- [x] News (needs some changes)  
+- [x] News  
 - [x] Wikipedia  
 - [x] Web search  
 - [x] Video Downloader(supports Youtube(Video/Audio), Instagram(Video), Facebook(Video))

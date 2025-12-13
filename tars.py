@@ -1,10 +1,13 @@
+import main
+import logging
+import sys
 from main import get_ai, console, ccount, summarize, text_input
 from styling import starting, input_type
 from rich.markdown import Markdown
 from stt import Audio
-from db import get_last_messages
-import logging
-import sys
+from supporter import *
+from db import *
+
 
 
 
@@ -18,6 +21,8 @@ def tars():
     global ccount
     starting()
     
+    main.current_session_id = create_new_session(main.model_id)
+    session_info = get_session_by_id(main.current_session_id)
     opt = input_type()
     
     if opt == "1":
@@ -32,14 +37,20 @@ def tars():
         status = get_ai(func)
         if status == None:
             func = text_input
-        if status in ["q", "quit", "exit", "stop"]:
+            
+        elif status in ["q", "quit", "exit", "stop"]:
+            end_session(main.current_session_id)
             return 
-        if status.lower() == "summarize":
+        elif status in ["clear", "clear.", "clear the screen", "clear the screen."]:
+            clear_console() 
+
+        elif status.lower() == "summarize":
             try:
                 last_10_messages = get_last_messages(limit=10)
             except Exception as e:
                 console.print(f"[red] No messages to summarize[/red]")
                 continue
+        
             else:
                 summary_prompt = "Summarize these messages concisely:\n"
                 
@@ -63,7 +74,7 @@ def tars():
         console.print(f"[deep_sky_blue1 dim]{ccount}[/deep_sky_blue1 dim]", justify="right")
         
         ## summarizin for every ten messages to reduce the usage of tokens.
-        if ccount % 10 == 0:  # every 10 chats
+        if ccount % 10 == 0:  # For every 10 chats
             yn = console.input("Summarize the chat to save tokens? [Yes/No]: ").strip().lower()
             if yn in ["yes", "y", "yes."]:
                 try:
@@ -72,7 +83,7 @@ def tars():
                     console.print(f"[red] No messages to summarize[/red]")
                     continue
                 else:
-                    summary_prompt = "Summarize these messages concisely:\n"
+                    summary_prompt = "Summarize these messages concisely and in this summarization keep only keypoints not entire content like what user asked in short and name and some details :\n"
                     for msg in last_10_messages:
                         summary_prompt += f"{msg['role']}:{msg['content']}\n"
 
@@ -89,6 +100,8 @@ if __name__ == "__main__":
         tars()
     except KeyboardInterrupt:
         console.print("\n[bold red]TARS SHUTDOWN SUCCESSFUL[/bold red]", justify="center")
+        end_session(main.current_session_id)
     except Exception as e:
         console.print(f"Error occured: {e}")
+        end_session(main.current_session_id)
         sys.exit(1)

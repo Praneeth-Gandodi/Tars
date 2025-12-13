@@ -4,4 +4,5 @@ python-dotenv
 rich
 requests
 ddgs
-pathlib
+python-docx
+pypdf
