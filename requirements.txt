@@ -6,3 +6,4 @@ requests
 ddgs
 python-docx
 pypdf
+yt-dlp
