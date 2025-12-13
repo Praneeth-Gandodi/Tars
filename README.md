@@ -115,3 +115,7 @@ python tars.py
 - [ ] Integrate Camu (for university attendance tracking; college-specific feature; can be ignored)  
 - [ ] Change the framework
 - [ ] Automation of tasks
+
+## License
+
+MIT License © 2025 Gandodi Praneeth Kumar
