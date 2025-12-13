@@ -41,9 +41,6 @@ def tars():
         elif status in ["q", "quit", "exit", "stop"]:
             end_session(main.current_session_id)
             return 
-        elif status in ["clear", "clear.", "clear the screen", "clear the screen."]:
-            clear_console() 
-
         elif status.lower() == "summarize":
             try:
                 last_10_messages = get_last_messages(limit=10)
