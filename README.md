@@ -17,7 +17,8 @@
     5. **Websearch** - Uses DuckDuckGo library. This tool can search for Pages, Images, Videos and news (Try to set the max_results to low to reduce high token consumption)
     6. **News** - Uses NewsAPI from this [`repo`](https://github.com/SauravKanchan/NewsAPI) so the news may and may not always be up to date (So use the `news_search` tool to get latest news)
     7. **Video Downloader** - Can download Youtube(Video/Audio), Facebook, Instagram Videos (Use this carefully, and do not download copyrighted content.)
-    8. **SQLite3** – Uses Python’s sqlite3 module for the database for the data persistant.
+    8. **File handling** - Can read, write, search and open files (For example You can ask it open video.mp4 in downloads and it can open the file.)
+    9. **SQLite3** – Uses Python’s sqlite3 module for the database for the data persistant.
 - Conversation history tracking
 - Automatic conversation summarization
 
@@ -107,6 +108,7 @@ python tars.py
 - [x] Video Downloader(supports Youtube(Video/Audio), Instagram(Video), Facebook(Video))
 - [x] SQLite3 for database
 - [x] Exception handling  
+- [x] File handling (Read and write text files, Search for files with names and types)
 - [ ] Spotify  
 - [ ] Application control  
 - [ ] Text-to-Speech (TTS)  
