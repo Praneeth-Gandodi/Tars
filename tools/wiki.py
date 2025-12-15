@@ -1,6 +1,5 @@
 import wikipedia 
-from rich.console import Console 
-console = Console()
+
 
 def wiki_search(word):
     """

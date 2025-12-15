@@ -25,7 +25,7 @@ def list_files_in_directory(directory):
     if not dir_path.exists():
         return f"File not find in the directory you specified {directory}"
     return [item.name for item in dir_path.iterdir()]
-
+ 
 def list_files_by_types(directory:str , ext:str):
     """
     List the files in that directory with the file type passed
