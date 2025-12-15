@@ -109,6 +109,8 @@ python tars.py
 - [x] SQLite3 for database
 - [x] Exception handling  
 - [x] File handling (Read and write text files, Search for files with names and types)
+- [x] Speedtest  
+- [ ] Browser Control
 - [ ] Spotify  
 - [ ] Application control  
 - [ ] Text-to-Speech (TTS)  

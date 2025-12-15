@@ -7,3 +7,4 @@ ddgs
 python-docx
 pypdf
 yt-dlp
+psutil

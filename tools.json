@@ -495,5 +495,18 @@
         "required": []
       }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "sptest",
+      "description": "Get the current Speedtest . Use when the user asks for internet speed.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    }
   }
 ]

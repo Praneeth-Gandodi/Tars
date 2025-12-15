@@ -68,7 +68,7 @@ def tars():
             console.print(status)
                     
         ccount += 1
-        console.print(f"[deep_sky_blue1 dim]{ccount}[/deep_sky_blue1 dim]", justify="right")
+        console.print(f"[grey46]message #[/grey46][deep_sky_blue1 dim]{ccount}[/deep_sky_blue1 dim]", justify="right")
         
         ## summarizin for every ten messages to reduce the usage of tokens.
         if ccount % 10 == 0:  # For every 10 chats

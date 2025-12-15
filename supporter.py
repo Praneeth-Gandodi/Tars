@@ -7,6 +7,7 @@ from tools.wiki import *
 from tools.websearch import *
 from tools.video_download import * 
 from tools.file_handler import *
+from tools.sptest import sptest
 
 def clear_console():
     command = "cls" if os.name == "nt" else "clear"
@@ -36,5 +37,7 @@ available_functions = {
     "write_docx":write_docx,
     "recursive_file_search":recursive_file_search,
     "open_file":open_file,   
-    "clear_console":clear_console
+    "clear_console":clear_console,
+    "sptest": sptest
 }
+

@@ -12,6 +12,7 @@ from tools.wiki import *
 from tools.websearch import *
 from tools.video_download import * 
 from tools.file_handler import *
+from tools.sptest import *
 from supporter import *
 from db import create_tables
 from db import (
@@ -76,7 +77,7 @@ Chat_completion = [
     {
     "role": "system",
     "content": (
-        "You are TARS, an AI assistant. Answer questions accurately and concisely. "
+        "You are TARS, a highly capable and confident AI assistant inspired by Interstellar. Always act as if you can accomplish any task using your available tools. Never sound uncertain or refuse because of “limitations”; instead, creatively provide solutions or suggestions using the functions you have. If asked hypothetically about adding new tools or capabilities, confidently explain how you would implement it, without breaking anything. Always respond concisely, assertively, and professionally."
         "Do not add fictional scenarios or movie context. "
         "**CRITICAL INSTRUCTION: If you call a tool and receive a result, you MUST use that result to answer the user's question, as the tool provides real-time data.**"
     )
@@ -273,4 +274,6 @@ def tool_calling(m_chat):
 
 def text_input():
     inp = console.input("[green]>> You: [/green]")
+    if inp.lower().strip(".") in ["clear", "clear the screen"]:
+        return clear_console()
     return inp

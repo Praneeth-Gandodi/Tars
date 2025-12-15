@@ -10,4 +10,10 @@ tools/attendance.py
 token_check.py
 tokens_check.txt
 tars.db
-
+tools/browser_control.py
+app_data.json
+Local_LLM.py
+practice.py
+todo.md
+auto_reload.py
+tools/app_open.py
