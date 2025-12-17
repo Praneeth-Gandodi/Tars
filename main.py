@@ -4,6 +4,7 @@ import sys
 from dotenv import load_dotenv, set_key
 from groq import Groq
 from rich.console import Console
+from rich.panel import Panel
 from stt import Audio
 from tools.weather import get_weather
 from tools.DateTime import get_datetime

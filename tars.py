@@ -63,7 +63,7 @@ def tars():
 
         try:
             md = Markdown(status)
-            console.print(md)
+            console.print(md, overflow="fold", no_wrap=False)
         except Exception as e:
             console.print(status)
                     

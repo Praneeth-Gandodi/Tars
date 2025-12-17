@@ -14,6 +14,10 @@ tools/browser_control.py
 app_data.json
 Local_LLM.py
 practice.py
-todo.md
+Markdown/
+Markdown/ROADMAP.md
 auto_reload.py
+todo.md
 tools/app_open.py
+tools/web_crawl.py
+test_db.py

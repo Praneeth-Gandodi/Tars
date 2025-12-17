@@ -10,16 +10,22 @@ console = Console()
 
 def starting():
     clear_console()
-    console.print("[bold cyan] TARS AI ASSISTANT[bold cyan]", justify="center")
-    console.print("[green]● System status: Online[/green]")
+    console.print()
+    TARS_ASCII_LOGO = """
+████████╗ █████╗ ██████╗ ███████╗     ██████╗██╗     ██╗
+╚══██╔══╝██╔══██╗██╔══██╗██╔════╝    ██╔════╝██║     ██║
+   ██║   ███████║██████╔╝███████╗    ██║     ██║     ██║
+   ██║   ██╔══██║██╔══██╗╚════██║    ██║     ██║     ██║
+   ██║   ██║  ██║██║  ██║███████║    ╚██████╗███████╗██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝     ╚═════╝╚══════╝╚═╝
+"""
+
+    console.print(f"[light_goldenrod2]{TARS_ASCII_LOGO}[/light_goldenrod2]", justify="left")
     console.print(f"[green]● Model: {model}[/green]")
-    console.print(f"[green]● Tools Available: Websearch, Wikipedia, Video Downloader, News, Weather, Datetime,File Handling, Open Files")
-    print()
     
 def input_type():
-    console.print("[i] Select Input Mode:", style="blue", markup=False)
-    console.print("[bright_yellow][1] Voice Input (Audio) [/bright_yellow]")
-    console.print("[bright_yellow][2] Text Input (Keyboard) [/bright_yellow]")
-    opt = console.input("[bright_yellow]Enter choice: [/bright_yellow]: ")
-    return opt
+    console.print("[bright_yellow][1] Voice Interface[/bright_yellow]")
+    console.print("[bright_yellow][2] Text Interface[/bright_yellow]")
+    opt = console.input("[bright_yellow]❯ Select Interce (1/2)[/bright_yellow]: ")
+    return opt if opt in ["1", "2"] else "2"
 

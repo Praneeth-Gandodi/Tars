@@ -74,17 +74,9 @@ pip install -r requirements.txt
 
 This project requires a Groq API key, which you can obtain for free from the official Groq website.
 
-1. Create a file named `.env` in the root of your project directory.
-2. Copy and paste the variables and model names from `.env.example` into your '.env`
-3. Paste your Groq API key in the `groq_api` field.
-
-### Your `.env` should look like this
-
-```env
-groq_api="YOUR_GROQ_API_KEY_HERE"
-
-model="llama3-8b-8192" #or Any model from Groq 
-```
+- You will be prompted to paste your Groq API key and model name.
+- Enter your Groq API key and the desired model name when prompted.
+- This setup is required only once. If you want to change the model name or API key later, open the generated .env file and update the values there.
 
 ---
 
