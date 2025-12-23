@@ -10,3 +10,5 @@ yt-dlp
 psutil
 wikipedia
 speedtest-cli
+prompt_toolkit
+pytz

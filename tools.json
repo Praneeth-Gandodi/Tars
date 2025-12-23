@@ -38,6 +38,7 @@
       }
     }
   },
+
   {
     "type": "function",
     "function": {
@@ -66,6 +67,24 @@
         "type": "object",
         "properties": {},
         "required": []
+      }
+    }
+  },
+    {
+    "type": "function",
+    "function": {
+      "name": "get_dt_by_place",
+      "description": "Get current date and time information for a specific city or location. ONLY use this when the user explicitly asks about date and time of a particular city.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "type": "string",
+            "description": "The name of the city or location (e.g., 'London', 'Tokyo', 'New York')"
+          }
+        },
+        "required": ["place"]
       }
     }
   },

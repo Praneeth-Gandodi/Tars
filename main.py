@@ -6,14 +6,6 @@ from groq import Groq
 from rich.console import Console
 from rich.panel import Panel
 from stt import Audio
-from tools.weather import get_weather
-from tools.DateTime import get_datetime
-from tools.news import get_news
-from tools.wiki import *
-from tools.websearch import *
-from tools.video_download import * 
-from tools.file_handler import *
-from tools.sptest import *
 from supporter import *
 from db import create_tables
 from db import (
@@ -178,7 +170,7 @@ def summarize(custom_prompt = None):
 
     return chat_summary
 
-## Tools calling - This section has too many comments because i dont remeber this logic that well.
+## Tools calling - MAIN LOGIC FOR TOOL CALLS.
 def tool_calling(m_chat):
     global user_conversation_id
     global current_session_id
@@ -277,7 +269,7 @@ def tool_calling(m_chat):
 
 def text_input():
     inp = console.input("[green]>> [/green]")
-    if inp == "":
+    if inp.strip() == "":
         text_input()
     if inp.lower().strip(".") in ["clear", "clear the screen"]:
         return clear_console()

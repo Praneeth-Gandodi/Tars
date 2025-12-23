@@ -1,7 +1,7 @@
 import os
 import subprocess
 from tools.weather import get_weather
-from tools.DateTime import get_datetime
+from tools.DateTime import *
 from tools.news import get_news
 from tools.wiki import *
 from tools.websearch import *
@@ -17,6 +17,7 @@ def clear_console():
 available_functions = {
     "get_weather": get_weather, 
     "get_datetime": get_datetime,
+    "get_dt_by_place":get_dt_by_place,
     "get_news": get_news,
     "wiki_search": wiki_search,
     "wiki_summary": wiki_summary,
