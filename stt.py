@@ -8,6 +8,7 @@ def Audio():
     global recorder
     console.print("[green dim]Speech engine is getting ready.[/green dim]")
     console.print("[green dim]Activating Vocal Processing Unit[/green dim]")
+    
     try:
         if recorder is None:
             recorder = AudioToTextRecorder(
@@ -23,6 +24,7 @@ def Audio():
         console.input("[yellow]Falling back to text input.[/yellow]")
         return None
     text = recorder.text()
+    
     print(f"You said: {text}") 
     cleaned_text = text.strip().rstrip('.!?,;:').lower()   
     if cleaned_text in ["q", "quit", "exit", "stop"]: 

@@ -21,3 +21,9 @@ todo.md
 tools/app_open.py
 tools/web_crawl.py
 test_db.py
+Spotify/
+input_panel_example.py
+issues_fixes.md
+Provider/
+provider_testing_tars.py
+provider_testing.py

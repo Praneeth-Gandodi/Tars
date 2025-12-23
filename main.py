@@ -27,14 +27,16 @@ from db import (
     get_session_by_id
 )
 
-
-create_tables()
-
-load_dotenv()
-
+if not os.path.exists(f"{os.getcwd()}/tars.db"):
+    console.print("[yellow]Database not found. Creating the Database[/yellow]")
+    create_tables()
+    console.print("[green]Database created successfully[/green]")
+else:
+    console.print("[green]Database detected.[/green]")
     
+    
+load_dotenv()   
 console = Console()
-
 
 if not os.getenv("groq_api"):
     console.print("[red]Error: groq_api key not found in environment[/red]")
@@ -208,7 +210,7 @@ def tool_calling(m_chat):
             trigger_conversation_id=user_conversation_id
             )
     
-            console.print(f"[dark_sea_green4]Making a call to the tool [bright_green]\"{function_name}\" function [/bright_green]with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4]", style="dim")
+            console.print(f"[dark_sea_green4]Making a call to the tool [bright_green]\"{function_name.strip("{}")}\" [/bright_green] function with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4]", style="dim")
             # Executing the function
             try:
                 function_response = f_to_call(**f_args)
@@ -274,7 +276,9 @@ def tool_calling(m_chat):
         return final_text  
 
 def text_input():
-    inp = console.input("[green]>> You: [/green]")
+    inp = console.input("[green]>> [/green]")
+    if inp == "":
+        text_input()
     if inp.lower().strip(".") in ["clear", "clear the screen"]:
         return clear_console()
     return inp

@@ -2,6 +2,10 @@ from rich.console import Console
 from rich.markdown import Markdown
 from dotenv import load_dotenv
 from supporter import clear_console
+from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.filters import is_done
+from prompt_toolkit.shortcuts import choice
+from prompt_toolkit.styles import Style
 import os
 
 load_dotenv()
@@ -24,8 +28,20 @@ def starting():
     console.print(f"[green]● Model: {model}[/green]")
     
 def input_type():
-    console.print("[bright_yellow][1] Voice Interface[/bright_yellow]")
-    console.print("[bright_yellow][2] Text Interface[/bright_yellow]")
-    opt = console.input("[bright_yellow]❯ Select Interce (1/2)[/bright_yellow]: ")
-    return opt if opt in ["1", "2"] else "2"
-
+    style = Style.from_dict(
+        {
+            "input-selection":"#D891E8",
+            "number":"fg:#1ac3d6 bold",
+        }
+    )
+    result = choice(
+        message="Select a Mode:",
+        options=[
+            ("1", "Voice Input"),
+            ("2", "Text Input"),
+        ],
+        style=style,
+        default="2",
+        mouse_support=True,
+    )
+    return result

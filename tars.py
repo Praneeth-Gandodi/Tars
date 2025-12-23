@@ -4,6 +4,7 @@ import sys
 from main import get_ai, console, ccount, summarize, text_input
 from styling import starting, input_type
 from rich.markdown import Markdown
+from rich.panel import Panel
 from stt import Audio
 from supporter import *
 from db import *
@@ -59,16 +60,25 @@ def tars():
                 console.print("Summarized chat:")
                 console.print(f"[grey93]{summary_text}[/grey93]") 
             
-        console.print("[bold green]>> TARS:[/bold green]", end=" ")
+        # console.print("[bold green]>> TARS:[/bold green]")
 
         try:
             md = Markdown(status)
-            console.print(md, overflow="fold", no_wrap=False)
+            ccount += 1
+            console.print(
+                Panel(
+                md, title="[white]Tars[/white]",
+                subtitle=f"[white]~ {ccount}[/white]",
+                subtitle_align="right",
+                title_align="left",
+                border_style="green" ),
+                overflow="fold",
+                no_wrap=False)
         except Exception as e:
             console.print(status)
                     
-        ccount += 1
-        console.print(f"[grey46]message #[/grey46][deep_sky_blue1 dim]{ccount}[/deep_sky_blue1 dim]", justify="right")
+        
+        # console.print(f"[grey46]message #[/grey46][deep_sky_blue1 dim]{ccount}[/deep_sky_blue1 dim]", justify="right")
         
         ## summarizin for every ten messages to reduce the usage of tokens.
         if ccount % 10 == 0:  # For every 10 chats

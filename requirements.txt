@@ -8,3 +8,5 @@ python-docx
 pypdf
 yt-dlp
 psutil
+wikipedia
+speedtest-cli
