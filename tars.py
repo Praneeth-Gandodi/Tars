@@ -5,7 +5,7 @@ from main import get_ai, console, ccount, summarize, text_input
 from styling import starting, input_type
 from rich.markdown import Markdown
 from rich.panel import Panel
-from stt_new import Audio
+from stt import Audio
 from supporter import *
 from db import *
 

@@ -1,4 +1,4 @@
-# Tars: Voice AI Assistant
+# Tars: Voice AI Assistant 🚧
 
 **TARS** is an **early-stage Voice AI Assistant** built to process **Speech-to-Text (STT)** input and generate comprehensive **Text-based** responses. It currently integrates features like weather, news and time retrieval along with conversation tracking. **Text-to-Speech (TTS) integration is planned for a future release.**.
 
