@@ -5,7 +5,7 @@ from main import get_ai, console, ccount, summarize, text_input
 from styling import starting, input_type
 from rich.markdown import Markdown
 from rich.panel import Panel
-from stt import Audio
+from stt_new import Audio
 from supporter import *
 from db import *
 
@@ -74,6 +74,7 @@ def tars():
                 border_style="green" ),
                 overflow="fold",
                 no_wrap=False)
+            print()
         except Exception as e:
             console.print(status)
                     

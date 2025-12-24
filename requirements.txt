@@ -12,3 +12,4 @@ wikipedia
 speedtest-cli
 prompt_toolkit
 pytz
+ffmpeg

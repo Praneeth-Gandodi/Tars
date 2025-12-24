@@ -28,7 +28,7 @@ def get_dt_by_place(place:str):
     except Exception as e:
         console.print(e)
     
-    return f"The current time in {place} is {time.strftime("%I:%M:%S:%p")} and date is {time.strftime("%d:%m:%Y")}"
+    return f"The current time in {place} is {time.strftime('%I:%M:%S:%p')} and date is {time.strftime('%d:%m:%Y')}"
 
 def get_datetime():
     """

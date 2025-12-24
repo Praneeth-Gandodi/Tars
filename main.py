@@ -23,8 +23,7 @@ if not os.path.exists(f"{os.getcwd()}/tars.db"):
     console.print("[yellow]Database not found. Creating the Database[/yellow]")
     create_tables()
     console.print("[green]Database created successfully[/green]")
-else:
-    console.print("[green]Database detected.[/green]")
+
     
     
 load_dotenv()   
@@ -202,7 +201,7 @@ def tool_calling(m_chat):
             trigger_conversation_id=user_conversation_id
             )
     
-            console.print(f"[dark_sea_green4]Making a call to the tool [bright_green]\"{function_name.strip("{}")}\" [/bright_green] function with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4]", style="dim")
+            console.print(f"[dark_sea_green4]Making a call to the tool [bright_green]\"{function_name.strip('{}')}\" [/bright_green] function with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4]", style="dim")
             # Executing the function
             try:
                 function_response = f_to_call(**f_args)
