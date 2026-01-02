@@ -1,17 +1,17 @@
-import main
 import logging
 import sys
-from main import get_ai, console, ccount, summarize, text_input
+import main
+from main import *
 from styling import starting, input_type
 from rich.markdown import Markdown
 from rich.panel import Panel
-from stt import Audio
+from rich.spinner import Spinner
 from supporter import *
 from db import *
 
 
 
-
+## To stop the printing of logging in the terminal.
 logging.getLogger().setLevel(logging.CRITICAL)
 logging.getLogger("RealtimeSTT").setLevel(logging.CRITICAL)
 logging.getLogger("faster_whisper").setLevel(logging.CRITICAL)
@@ -20,6 +20,7 @@ logging.getLogger("httpcore").setLevel(logging.CRITICAL)
 
 def tars():
     global ccount
+    audio_reply = False
     starting()
     
     main.current_session_id = create_new_session(main.model_id)
@@ -27,22 +28,35 @@ def tars():
     opt = input_type()
     
     if opt == "1":
+        func = text_input
+    elif opt == "3":
+        try:
+            with console.status("[green dim]Importing STT module[/green dim]", spinner="dots") as status:
+                from speech_to_text import Audio
+        except ImportError as e:
+            console.print(f"[red dim]Error: {e}[/red dim]")
         func = Audio
     elif opt == "2":
-        func = text_input
+        try:
+            with console.status("[green dim]Importing STT & TTS modules [/green dim]", spinner="dots") as status:
+                from speech_to_text import Audio
+                from text_to_speech import tts_pipeline
+        except ImportError as e:
+            console.print(f"[red dim]Error: {e}[/red dim]")
+        func = Audio
+        audio_reply = True
     else:
         console.print("[red]Invalid choice[/red]")
         return
     
     while True:
         status = get_ai(func)
-        if status == None:
-            func = text_input
-            
-        elif status in ["q", "quit", "exit", "stop"]:
+        # if status == None:
+        #     func = text_input      
+        if status == "/exit":
             end_session(main.current_session_id)
-            return 
-        elif status.lower() == "summarize":
+            sys.exit(1)
+        elif status.lower() == "/summarize":
             try:
                 last_10_messages = get_last_messages(limit=10)
             except Exception as e:
@@ -60,8 +74,6 @@ def tars():
                 console.print("Summarized chat:")
                 console.print(f"[grey93]{summary_text}[/grey93]") 
             
-        # console.print("[bold green]>> TARS:[/bold green]")
-
         try:
             md = Markdown(status)
             ccount += 1
@@ -75,11 +87,11 @@ def tars():
                 overflow="fold",
                 no_wrap=False)
             print()
+            if audio_reply:
+                tts_pipeline(text=status)
         except Exception as e:
             console.print(status)
                     
-        
-        # console.print(f"[grey46]message #[/grey46][deep_sky_blue1 dim]{ccount}[/deep_sky_blue1 dim]", justify="right")
         
         ## summarizin for every ten messages to reduce the usage of tokens.
         if ccount % 10 == 0:  # For every 10 chats

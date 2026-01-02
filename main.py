@@ -1,14 +1,14 @@
 import os
-import json
 import sys
+import tomlkit 
 from dotenv import load_dotenv, set_key
 from groq import Groq
 from rich.console import Console
 from rich.panel import Panel
-from stt import Audio
+from rich.live import Live
 from supporter import *
-from db import create_tables
 from db import (
+    create_tables,
     save_user_message,
     save_assistant_message,
     save_tool_call,
@@ -19,24 +19,26 @@ from db import (
     get_session_by_id
 )
 
+
+# Checking if Database exists.
 if not os.path.exists(f"{os.getcwd()}/tars.db"):
     console.print("[yellow]Database not found. Creating the Database[/yellow]")
     create_tables()
     console.print("[green]Database created successfully[/green]")
 
     
-    
 load_dotenv()   
 console = Console()
 
+#Checking if the API keys are available in the .env file if not Prompt the user to provide the key.
 if not os.getenv("groq_api"):
-    console.print("[red]Error: groq_api key not found in environment[/red]")
+    console.print("[red]groq_api key not found in environment[/red]")
     groq_api = console.input("[yellow]Enter your Groq API key : [/yellow]")
     set_key(".env", "groq_api", groq_api)
     console.print("[green]Api key added to the .env file successfully[/green]")
     load_dotenv()
 if not os.getenv("model"):
-    console.print("[red]Error: Model not specified.[/red]")
+    console.print("[red]Model not specified in the .env file.[/red]")
     model = console.input("[yellow]Model ID ([link=https://console.groq.com/docs/models][blue underline]list[/blue underline][/link], blank = default): [/yellow]")
     if model:
         set_key(".env", "model", model)
@@ -45,7 +47,7 @@ if not os.getenv("model"):
     else:
         model = "openai/gpt-oss-120b"
         set_key(".env", "model", model)
-        console.print(f"[green]Default model: {model} is set successfully.")
+        console.print(f"[green]Default model as '{model}' set successfully.")
         load_dotenv()
 
 
@@ -58,6 +60,7 @@ current_session_id = None
 
 
 try:
+    import json
     with open('./tools.json', 'r') as f:
         tools = json.load(f)
 except FileNotFoundError:
@@ -65,8 +68,16 @@ except FileNotFoundError:
     sys.exit()
 except json.JSONDecodeError as e:
     console.print()
-
-
+    
+def get_settings():
+    try:
+        with open("settings.toml", "r") as f:
+            settings = tomlkit.load(f)
+    except FileNotFoundError:
+        console.print("[red] Settings toml file not found.")
+    else:
+        return settings
+    
 Chat_completion = [
     {
     "role": "system",
@@ -78,12 +89,11 @@ Chat_completion = [
     }
 ]
 
+
 available_functions = available_functions
-
-
 model_id = get_or_create_model(provider="groq", model_name=os.getenv("model"))
-
 user_conversation_id = None
+
 
 ## AI responses
 def get_ai(func):
@@ -93,9 +103,9 @@ def get_ai(func):
     global model_id
     while True:
         user_input = func()
-        if user_input.lower() in["q", "quit", "exit", "stop"]:
+        if user_input.lower() in ["/quit" , "/exit"]:
             end_session(current_session_id)
-            return "exit"
+            return "/exit"
         
         ## Saved to in-memory chat completions
         Chat_completion.append(
@@ -148,10 +158,11 @@ def summarize(custom_prompt = None):
         }
     )
     try:
-        cresponse = client.chat.completions.create(
-            messages = Chat_completion,
-            model = model
-        )
+        with console.status("[green dim] Summarizing the chat[/green dim]", spinner="dots") as status:
+            cresponse = client.chat.completions.create(
+                messages = Chat_completion,
+                model = model
+            )
     except Exception as e:
         console.print(f"Exception occcured {e}")
     chat_summary = cresponse.choices[0].message.content
@@ -164,9 +175,6 @@ def summarize(custom_prompt = None):
     "role": "assistant",
     "content": chat_summary
     })
-    
-    console.print("[green] Automatic Summarizer", justify="center", style="dim")
-
     return chat_summary
 
 ## Tools calling - MAIN LOGIC FOR TOOL CALLS.
@@ -174,9 +182,6 @@ def tool_calling(m_chat):
     global user_conversation_id
     global current_session_id
     global model_id
-    console.print("Tool calling : ", style="dim")
-    
-    
     Chat_completion.append(m_chat)
     
     # Gets tool name and execute the function
@@ -201,17 +206,52 @@ def tool_calling(m_chat):
             trigger_conversation_id=user_conversation_id
             )
     
-            console.print(f"[dark_sea_green4]Making a call to the tool [bright_green]\"{function_name.strip('{}')}\" [/bright_green] function with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4]", style="dim")
+            settings = get_settings()
             # Executing the function
             try:
+                if settings["general"]["display_function_response"] != 3:
+                    live = Live(Panel(
+                        f"[dark_sea_green4 dim]Making a call to the tool [bright_green]\"{function_name}\"[/bright_green] function with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4 dim]",
+                        title="[white]Tool Call[/white]",
+                        title_align="left",
+                        border_style="green"
+                    ), refresh_per_second=4)
+                    
+                    live.start()
                 function_response = f_to_call(**f_args)
-            except TypeError as e:
-                function_response = f"Error: Invalid arguements passed for the function {e}"
-            except Exception as e:
-                function_response = f"Error: An Exception occured {e}"
                 
+            except TypeError as e:
+                function_response = f"Error: Invalid arguments passed for the function {e}"
+            except Exception as e:
+                function_response = f"Error: An exception occurred {e}"
 
-            console.print(function_response, style="dim")
+            if isinstance(function_response, (dict, list)):
+                function_response = json.dumps(function_response, indent=2, ensure_ascii=False)
+            else:
+                function_response = str(function_response)
+
+            
+            
+            if settings["general"]["display_function_response"] == 1:
+                live.update(Panel(
+                    f"[dark_sea_green4 dim]Making a call to the tool [bright_green]\"{function_name}\"[/bright_green] function with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4 dim]"
+                    f"[green dim]\nTool response[/green dim]"
+                    f"\n[green dim]{function_response}[/green dim]",
+                    title="[white]Tool Call[/white]",
+                    title_align="left",
+                    border_style="green"
+                ))
+                live.stop()
+            elif settings["general"]["display_function_response"] == 2:
+                live.stop()
+                console.print(Panel(
+                    f"[dark_sea_green4 dim]Making a call to the tool [bright_green]\"{function_name}\"[/bright_green] function with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4 dim]",
+                    title="[white]Tool Call[/white]",
+                    title_align="left",
+                    border_style="green"
+                ))
+            else:
+                print()
             
             # Returning the actual conversation to the chat
             Chat_completion.append({
@@ -233,19 +273,17 @@ def tool_calling(m_chat):
                 "content": json.dumps({"error": f"Function {function_name} not found"})
             })
     
-    # Making the second API call to give the data to the LLM
-    console.print("[green dim]Processing the data[/green dim]")
-    
     # First, make a non streaming call to check if the model wants to use another tool
     try:
-        response = client.chat.completions.create(
-            messages=Chat_completion,
-            model=model,
-            tools=tools,
-            tool_choice="auto",
-            stop=None,
-            stream=False
-        )
+        with console.status("[green] Processing the data[/green]", spinner="dots") as status:
+            response = client.chat.completions.create(
+                messages=Chat_completion,
+                model=model,
+                tools=tools,
+                tool_choice="auto",
+                stop=None,
+                stream=False
+            )
     except Exception as e:
         console.print(f"Exception occured: {e}")
         
@@ -253,7 +291,7 @@ def tool_calling(m_chat):
     
     # If the model wants to use another tool, handle it recursively
     if response_message.tool_calls:
-        console.print("\n[yellow]Model requesting another tool call...[/yellow]", style="dim")
+        # console.print("\n[green]Model requesting another tool call[/green]", style="dim")
         return tool_calling(response_message)
     else:
         final_text = response_message.content
@@ -262,14 +300,23 @@ def tool_calling(m_chat):
             "content": final_text
         })
         
-        #Save assistant message to the db 
+        # Save assistant message to the db 
         save_assistant_message(final_text, current_session_id, model_id=model_id)
         return final_text  
 
+
 def text_input():
     inp = console.input("[green]>> [/green]")
+    print()
     if inp.strip() == "":
-        text_input()
-    if inp.lower().strip(".") in ["clear", "clear the screen"]:
-        return clear_console()
-    return inp
+        return text_input()
+    elif inp.lower().strip(".") == "/clear":
+        clear_console()
+        return text_input()
+    elif inp.lower().strip() == "/summarize":
+        summarize()
+        return text_input()
+    elif inp.lower().strip() in ["/exit" , "/quit"]:
+        return "/exit"
+    else:
+        return inp

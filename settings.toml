@@ -1,0 +1,15 @@
+# Settings 
+
+[general]
+
+# To print the function reponse and print what the tool AI called set display_function_response to 1
+# If you want to print only what tool that AI called set this value to 2
+# If you don't want to print anything about the tool calling set this to 3 
+display_function_response = 1
+
+display_summeraize = false
+default_mode = 1
+
+
+
+

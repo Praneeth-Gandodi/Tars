@@ -408,21 +408,30 @@
       }
     }
   },
-  {
-    "type": "function",
-    "function": {
-      "name": "list_files_by_types",
-      "description": "Lists files in a directory that match a specific file extension.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "directory": { "type": "string" },
-          "ext": { "type": "string", "description": "The file extension (e.g., 'pdf', 'txt')." }
+ {
+  "type": "function",
+  "function": {
+    "name": "list_files_by_types",
+    "description": "Lists files in a directory that match specific file extensions.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "directory": { 
+          "type": "string",
+          "description": "The directory path to search in"
         },
-        "required": ["directory", "ext"]
-      }
+        "ext": { 
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of file extensions (e.g., ['pdf', 'txt', 'mp4'])"
+        }
+      },
+      "required": ["directory", "ext"]
     }
-  },
+  }
+},
   {
     "type": "function",
     "function": {
@@ -527,5 +536,32 @@
         "required": []
       }
     }
+  },
+  {
+  "type": "function",
+  "function": {
+    "name": "manage_memory",
+    "description": "Manage a persistent markdown memory file (memory.md) for storing and retrieving information across sessions. Use 'r' mode to read existing memories, 'w' mode to create or completely overwrite the memory file with new content, and 'a' mode to add new information to the end of existing memories. This tool allows the AI to maintain context and remember important details about conversations, user preferences, and learned information.Use this when user asks for his personal information nor preferences.",
+    "strict": false,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "description": "The operation mode: 'r' for reading the memory file, 'w' for writing (overwriting) the entire file, or 'a' for appending new content to the existing file",
+          "enum": ["r", "w", "a"]
+        },
+        "content": {
+          "type": "string",
+          "description": "The markdown content to write or append. Required when mode is 'w' or 'a'. Should be valid markdown format. Not needed for 'r' mode."
+        },
+        "filepath": {
+          "type": "string",
+          "description": "The path to the memory file. Defaults to 'memory.md' if not specified. Can be customized to manage different memory files."
+        }
+      },
+      "required": ["mode"]
+    }
   }
+}
 ]

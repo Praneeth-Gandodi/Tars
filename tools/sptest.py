@@ -9,13 +9,12 @@ def sptest():
     Returns:
         _type_: _description_
     """
-    with console.status("[green dim]Checking internet speed[green dim]", spinner = "dots"):
-        st = speedtest.Speedtest()
-        st.get_best_server()
-        dspeed = st.download()
-        uspeed = st.upload()
-        ping = st.results.ping
-    
+    st = speedtest.Speedtest()
+    st.get_best_server()
+    dspeed = st.download()
+    uspeed = st.upload()
+    ping = st.results.ping
+
     download_mbps = dspeed / 1000000
     upload_mbps = uspeed / 1000000
     

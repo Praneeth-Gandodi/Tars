@@ -1,12 +1,13 @@
 import os
 import json
 import subprocess
+import shutil
 import platform
 from pathlib import Path
 from docx import Document
 from pypdf import PdfReader
-
 from rich.console import Console 
+
 console = Console()
 
 homedir = Path.home()
@@ -26,7 +27,7 @@ def list_files_in_directory(directory):
         return f"File not find in the directory you specified {directory}"
     return [item.name for item in dir_path.iterdir()]
  
-def list_files_by_types(directory:str , ext:str):
+def list_files_by_types(directory:str , ext:list):
     """
     List the files in that directory with the file type passed
     Args:
@@ -39,9 +40,12 @@ def list_files_by_types(directory:str , ext:str):
     dir_path = Path(directory)
     if not dir_path.exists():
         return "The file path doesnot Exits"
-    ext = ext.lower().strip()
-    ext = f"*.{ext}"
-    return [item.name for item in dir_path.glob(ext)]
+    files = []
+    for extension in ext:
+        extension = extension.lower().strip()
+        extension = f"*.{extension}"
+        files.extend([item.name for item in dir_path.glob(extension)])
+    return files
 
 def read_file_content(directory:str):
     """

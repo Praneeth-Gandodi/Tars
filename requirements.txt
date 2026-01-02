@@ -13,3 +13,4 @@ speedtest-cli
 prompt_toolkit
 pytz
 ffmpeg
+piper-tts

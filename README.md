@@ -1,6 +1,10 @@
 # Tars: Voice AI Assistant 🚧
 
-**TARS** is an **early-stage Voice AI Assistant** built to process **Speech-to-Text (STT)** input and generate comprehensive **Text-based** responses. It currently integrates features like weather, news and time retrieval along with conversation tracking. **Text-to-Speech (TTS) integration is planned for a future release.**.
+**TARS** is an **early-stage Voice AI Assistant** built to process **Speech-to-Text (STT)**, **Text** inputs and generate both **Speech-Based** and ***Text-based** responses. It integrates features such as file handling, news retrieval, minimal web search, and persistent conversation tracking.
+
+---
+
+## NOTE: Tars is built as a learning project
 
 ---
 
@@ -8,17 +12,14 @@
 
 - **Speech-to-Text (STT)** Processing for voice input
 - **Text-to-Text** Can chat with the model directly
-- Text-based Responses (**TTS to be added later**)
+- **Text-to-Speech (TTS)** based responses.
+- **Persistent conversation storage using SQLite**
 - **Integrated Tools:**
-    1. **Weather Tool** – Fetches current weather
-    2. **Date & Time Tool** – Fetches current date and time
+    1. **Websearch** - Uses DuckDuckGo library. This tool can search for Pages, Images, Videos and news (Try to set the max_results to low to reduce high token consumption)
+    2. **Wikipedia** - Can do wikipedia Search, Summary and Content(Using tool will consume a lot of tokens.)
     3. **News** - Fetches news based on country and categories
-    4. **Wikipedia** - Can do wikipedia Search, Summary and Content(Using tool will consume a lot of tokens.)
-    5. **Websearch** - Uses DuckDuckGo library. This tool can search for Pages, Images, Videos and news (Try to set the max_results to low to reduce high token consumption)
-    6. **News** - Uses NewsAPI from this [`repo`](https://github.com/SauravKanchan/NewsAPI) so the news may and may not always be up to date (So use the `news_search` tool to get latest news)
-    7. **Video Downloader** - Can download Youtube(Video/Audio), Facebook, Instagram Videos (Use this carefully, and do not download copyrighted content.)
-    8. **File handling** - Can read, write, search and open files (For example You can ask it open video.mp4 in downloads and it can open the file.)
-    9. **SQLite3** – Uses Python’s sqlite3 module for the database for the data persistant.
+    4. **File handling** - Can read, write, search and open files (For example You can ask it open video.mp4 in downloads folder and it can open the file.)
+    5. **Video downloading utilities**
 - Conversation history tracking
 - Automatic conversation summarization
 
@@ -28,7 +29,7 @@
 
 ### Prerequisites
 
-- Python 3.13.x -- Tested in this environment
+- Python 3.12.x -- Tested in this environment
 
 ### Clone the repo
 
@@ -90,22 +91,24 @@ python tars.py
 
 ---
 
-## Development Status
+## Development Status : Paused⏸️
 
-- [x] Weather  
-- [x] Date & Time  
-- [x] News  
-- [x] Wikipedia  
+---
+
+### Implemented / Planned Features
+
+- [x] Text-to-Speech (TTS)
 - [x] Web search  
-- [x] Video Downloader(supports Youtube(Video/Audio), Instagram(Video), Facebook(Video))
-- [x] SQLite3 for database
-- [x] Exception handling  
+- [x] News  
+- [x] Wikipedia
 - [x] File handling (Read and write text files, Search for files with names and types)
-- [x] Speedtest  
+- [x] Video Downloader(supports Youtube(Video/Audio), Instagram(Video), Facebook(Video))
+- [x] Weather  
+- [x] Date & Time
+- [x] Speedtest
 - [ ] Browser Control
 - [ ] Spotify  
-- [ ] Application control  
-- [ ] Text-to-Speech (TTS)  
+- [ ] Application control
 - [ ] Integrate Camu (for university attendance tracking; college-specific feature; can be ignored)  
 - [ ] Change the framework
 - [ ] Automation of tasks

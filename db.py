@@ -95,9 +95,9 @@ def create_tables():
         summary_flag BOOLEAN DEFAULT 0,
         tts_file TEXT NULL,
         user_id INTEGER NULL,
-        FOREIGN KEY (tool_call_id) REFERENCES tool_call(id) ON DELETE SET NULL,
+        FOREIGN KEY (tool_call_id) REFERENCES tool_calls(id) ON DELETE SET NULL,
         FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE SET NULL,
-        FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE SET NULL      
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL      
     );
     """
     )

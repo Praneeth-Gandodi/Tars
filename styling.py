@@ -37,11 +37,12 @@ def input_type():
     result = choice(
         message="Select a Mode:",
         options=[
-            ("1", "Voice Input"),
-            ("2", "Text Input"),
+            ("1", "Text → Text"),
+            ("2", "Voice → Voice (STT + TTS)"),
+            ("3", "Voice → Text")
         ],
         style=style,
-        default="2",
+        default="1",
         mouse_support=True,
     )
     return result

@@ -1,5 +1,6 @@
 import os
 import subprocess
+from rich.console import Console
 from tools.weather import get_weather
 from tools.DateTime import *
 from tools.news import get_news
@@ -8,6 +9,9 @@ from tools.websearch import *
 from tools.video_download import * 
 from tools.file_handler import *
 from tools.sptest import sptest
+from tools.memory import *
+
+console = Console()
 
 def clear_console():
     command = "cls" if os.name == "nt" else "clear"
@@ -39,6 +43,10 @@ available_functions = {
     "recursive_file_search":recursive_file_search,
     "open_file":open_file,   
     "clear_console":clear_console,
-    "sptest": sptest
+    "sptest": sptest,
+    "manage_memory":manage_memory
 }
 
+def tars_settings():
+    console.print("Settings")
+    return 
