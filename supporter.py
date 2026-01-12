@@ -10,6 +10,7 @@ from tools.video_download import *
 from tools.file_handler import *
 from tools.sptest import sptest
 from tools.memory import *
+from tools.app_open import software_opener
 
 console = Console()
 
@@ -31,10 +32,7 @@ available_functions = {
     "video_search":video_search,
     "news_search": news_search,
     "yt_info": yt_info,
-    "yt_videoDownload": yt_videoDownload,
-    "yt_AudioDownload" : yt_AudioDownload,
-    "ig_download": ig_download,
-    "fb_download": fb_download,
+    "media_downloader": media_downloader,
     "list_files_in_directory":list_files_in_directory,
     "list_files_by_types":list_files_by_types,
     "read_file_content":read_file_content,
@@ -44,7 +42,8 @@ available_functions = {
     "open_file":open_file,   
     "clear_console":clear_console,
     "sptest": sptest,
-    "manage_memory":manage_memory
+    "manage_memory":manage_memory,
+    "software_opener": software_opener
 }
 
 def tars_settings():

@@ -37,125 +37,52 @@ def yt_info(url):
         }
      
     
-def yt_videoDownload(link , location = "Downloads"):
+def media_downloader(link:str, download_path:str , media_type:str):
     """
-    Downloads the Youtube video with the best quitlity available.
+        Downlaods audio or video from the passed link and saves it in the given path.
     Args:
-        link (str): Youtube URL to the video.
-        location (str, optional): Subfolder under the home directory where the video is downloaded. Defaults to "Downloads".
-
+        link (str): Link to the video/audio that you want to Downlaod.
+        download_path (str): File Downlaod path default will be Downloads folder.
+        media_type (str): Type to download Audio or Video.
     Returns:
-        str : A string metioning the video download status (Successfull/Failed). If successfull retuns video title and the location where the video downlaoded.
+        str : Download is successful or not.
     """
-    download_location = loc / location
-    ydl_opts = {
-        'outtmpl': f'{download_location}/%(title)s.%(ext)s',
+    home_directory = Path.home()
+    download_path = home_directory / download_path   
+    yt_opts = {
+        "outtmpl": f"{download_path}/%(title)s.%(ext)s",
         'quiet': True,
         'noplaylist': True,
         'progress': True,
         "no_warnings": True,
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'merge_output_format': 'mp4',
     }
+    media_type = media_type.lower()
+
+    if media_type == "video":
+        yt_opts.update({
+            "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+            "merge_output_format": "mp4",
+        })
+
+    elif media_type == "audio":
+        yt_opts.update({
+            "format": "bestaudio/best",
+            "postprocessors": [
+                {
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "mp3",
+                    "preferredquality": "192",
+                }
+            ],
+        })
+    else:
+        return "Invalid media_type. Use 'audio' or 'video'."
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL(yt_opts) as ydl:
             info = ydl.extract_info(link, download=False)
             title = info.get('title')
             ydl.download([link])
     except Exception as e:
         return f"An ERROR occured while downloading the video : {e}"
     else:    
-        return f"Downloaded video '{title}' to location '{download_location}' successfully."
-    
-def yt_AudioDownload(link, location="Downloads"):
-    """
-    Downloads the Youtube Audio with the best quitlity available.
-    Args:
-        link (str): Youtube URL to the Audio.
-        location (str, optional): Subfolder under the home directory where the video is downloaded. Defaults to "Downloads".
-
-    Returns:
-        str : A string metioning the video download status (Successfull/Failed). If successfull retuns Audio title and the location where the audio downlaoded.
-    """
-    download_location = loc / location
-    ydl_opts = {
-    'outtmpl': f'{download_location}/%(title)s.%(ext)s',
-    'quiet': True,
-    'noplaylist': True,
-    'progress': True,
-    "no_warnings": True,
-    "format": "bestaudio/best",
-    'postprocessors': [
-        {
-        'key': 'FFmpegVideoConvertor',
-        'preferedformat': 'mp3'
-        }
-        ],
-    }
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(link, download=False)
-            title = info.get('title')
-            ydl.download([link])
-    except Exception as e:
-        return f"An Error occured {e}"
-    else:
-        return f"Downloaded Audio '{title}' to location '{download_location}' successfully."
-    
-
-def ig_download(link, location="Downloads"):
-    """
-    Downloads the Instagram video with the best quitlity available.
-    Args:
-        link (str): Instagram URL to the video.
-        location (str, optional): Subfolder under the home directory where the video is downloaded. Defaults to "Downloads".
-
-    Returns:
-        str : A string metioning the video download status (Successfull/Failed). If successfull retuns video title and the location where the video downlaoded.
-    """
-    download_location = loc / location
-    yt_opts = {
-        "outtmpl": f"{download_location}/%(title)s.%(ext)s",
-        'quiet': True,
-        'noplaylist': True,
-        'progress': True,
-        "no_warnings": True,
-    }
-    try:
-        with yt_dlp.YoutubeDL(yt_opts) as ydl:
-            info = ydl.extract_info(link, download=False)
-            title = info.get('title')
-            ydl.download([link])
-    except Exception as e:
-        return f"An Error occured {e}"
-    else:
-        return f"Downloaded Instagram video '{title}' to location '{download_location}' successfully."
-        
-def fb_download(link, location="Downloads"):
-    """
-    Downloads the Facebook video with the best quitlity available.
-    Args:
-        link (str): Facebook URL to the video.
-        location (str, optional): Subfolder under the home directory where the video is downloaded. Defaults to "Downloads".
-
-    Returns:
-        str : A string metioning the video download status (Successfull/Failed). If successfull retuns video title and the location where the video downlaoded.
-    """    
-    download_location = loc / location
-    yt_opts = {
-        "outtmpl": f"{download_location}/%(title)s.%(ext)s",
-        'quiet': True,
-        'noplaylist': True,
-        'progress': True,
-        "no_warnings": True,
-    }
-    try:
-        with yt_dlp.YoutubeDL(yt_opts) as ydl:
-            info = ydl.extract_info(link, download=False)
-            title = info.get('title')
-            ydl.download([link])
-    except Exception as e:
-        return f"An Error occured {e}"
-    else:
-        return f"Downloaded Instagram video '{title}' to location '{download_location}' successfully."
-        
+        return f"Downloaded video '{title}' to location '{download_path}' successfully."

@@ -50,9 +50,13 @@ def tars():
         return
     
     while True:
-        status = get_ai(func)
-        # if status == None:
-        #     func = text_input      
+        try:
+            status = get_ai(func)
+        except KeyboardInterrupt:
+            console.print("\n[bold yellow]Keyboard intereption detected type '/exit' to quit.[/bold yellow]")  
+            print()  
+            continue
+         
         if status == "/exit":
             end_session(main.current_session_id)
             sys.exit(1)
@@ -117,10 +121,7 @@ def tars():
         
 if __name__ == "__main__":
     try:
-        tars()
-    except KeyboardInterrupt:
-        console.print("\n[bold red]TARS SHUTDOWN SUCCESSFUL[/bold red]", justify="center")
-        end_session(main.current_session_id)
+        tars()   
     except Exception as e:
         console.print(f"Error occured: {e}")
         end_session(main.current_session_id)

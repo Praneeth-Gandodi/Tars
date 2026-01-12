@@ -12,7 +12,6 @@ tars.db
 tools/browser_control.py
 Local_LLM.py
 Markdown/
-tools/app_open.py
 tools/web_crawl.py
 Provider/
 memory.md

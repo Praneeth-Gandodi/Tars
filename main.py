@@ -101,48 +101,47 @@ def get_ai(func):
     global user_conversation_id
     global current_session_id
     global model_id
-    while True:
-        user_input = func()
-        if user_input.lower() in ["/quit" , "/exit"]:
-            end_session(current_session_id)
-            return "/exit"
-        
-        ## Saved to in-memory chat completions
-        Chat_completion.append(
-            {"role": "user",
-            "content": user_input})
-        
-        ## Saved to db for conversation storage
-        user_conversation_id = save_user_message(user_input, current_session_id, model_id=model_id)
-        try:
-            response = client.chat.completions.create(
-                messages = Chat_completion,
-                model = model,
-                tools = tools,
-                tool_choice="auto",
-                stop = None,
-                stream = False
-            )
-        except Exception as e:
-            console.print(f"Exception : {e}")
-        response_message = response.choices[0].message
-        final_text = ""
-        if response_message.tool_calls:           
-            final_text = tool_calling(response_message)
-            return final_text
-        else:      
-            final_text = response_message.content      
+    user_input = func()
+    if user_input.lower() in ["/quit" , "/exit"]:
+        end_session(current_session_id)
+        return "/exit"
+    
+    ## Saved to in-memory chat completions
+    Chat_completion.append(
+        {"role": "user",
+        "content": user_input})
+    
+    ## Saved to db for conversation storage
+    user_conversation_id = save_user_message(user_input, current_session_id, model_id=model_id)
+    try:
+        response = client.chat.completions.create(
+            messages = Chat_completion,
+            model = model,
+            tools = tools,
+            tool_choice="auto",
+            stop = None,
+            stream = False
+        )
+    except Exception as e:
+        console.print(f"Exception : {e}")
+    response_message = response.choices[0].message
+    final_text = ""
+    if response_message.tool_calls:           
+        final_text = tool_calling(response_message)
+        return final_text
+    else:      
+        final_text = response_message.content      
 
 
-            Chat_completion.append({
-                "role": "assistant",
-                "content": final_text
-                })
+        Chat_completion.append({
+            "role": "assistant",
+            "content": final_text
+            })
 
-            # Save to DB
-            assitant_cid = save_assistant_message(final_text, current_session_id, model_id=model_id)
+        # Save to DB
+        assitant_cid = save_assistant_message(final_text, current_session_id, model_id=model_id)
 
-            return final_text
+        return final_text
   
 ## Chat Summarizer    
 def summarize(custom_prompt = None):
@@ -250,9 +249,6 @@ def tool_calling(m_chat):
                     title_align="left",
                     border_style="green"
                 ))
-            else:
-                print()
-            
             # Returning the actual conversation to the chat
             Chat_completion.append({
                 "role": "tool",
@@ -317,6 +313,7 @@ def text_input():
         summarize()
         return text_input()
     elif inp.lower().strip() in ["/exit" , "/quit"]:
+        console.print("[red]TARS SHUTDOWN SUCCESSFULL[/red]")
         return "/exit"
     else:
         return inp

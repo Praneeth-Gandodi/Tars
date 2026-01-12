@@ -305,92 +305,26 @@
   {
     "type": "function",
     "function": {
-      "name": "yt_videoDownload",
-      "description": "Downloads a YouTube video in the best available quality as MP4 format if user didnt provide any link use the video search tool to search the video and then downlaod. Use this when the user explicitly asks to download or save a YouTube video.",
-      "strict": false,
+      "name": "media_downloader",
+      "description": "Downloads audio or video from a given link and saves it to a specified path relative to the user's home directory.",
       "parameters": {
         "type": "object",
         "properties": {
           "link": {
             "type": "string",
-            "description": "The full YouTube video URL (e.g., 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')"
+            "description": "The URL of the video or audio to download."
           },
-          "location": {
+          "download_path": {
             "type": "string",
-            "description": "Subfolder name under the user's home directory where the video will be saved. Defaults to 'Downloads'.",
-            "default": "Downloads"
+            "description": "The directory path (relative to the home folder) where the media will be saved."
+          },
+          "media_type": {
+            "type": "string",
+            "description": "Type of media to download.",
+            "enum": ["audio", "video"]
           }
         },
-        "required": ["link"]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "yt_AudioDownload",
-      "description": "Downloads audio from a YouTube video in the best available quality, converted to MP3 format. Use this when the user asks to download just the audio or music from a YouTube video.",
-      "strict": false,
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "link": {
-            "type": "string",
-            "description": "The full YouTube video URL (e.g., 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')"
-          },
-          "location": {
-            "type": "string",
-            "description": "Subfolder name under the user's home directory where the audio file will be saved. Defaults to 'Downloads'.",
-            "default": "Downloads"
-          }
-        },
-        "required": ["link"]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "ig_download",
-      "description": "Downloads an Instagram video in the best available quality. Use this when the user explicitly asks to download or save an Instagram video, reel, or IGTV content.",
-      "strict": false,
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "link": {
-            "type": "string",
-            "description": "The full Instagram video URL (e.g., 'https://www.instagram.com/p/...', 'https://www.instagram.com/reel/...')"
-          },
-          "location": {
-            "type": "string",
-            "description": "Subfolder name under the user's home directory where the video will be saved. Defaults to 'Downloads'.",
-            "default": "Downloads"
-          }
-        },
-        "required": ["link"]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "fb_download",
-      "description": "Downloads a Facebook video in the best available quality. Use this when the user explicitly asks to download or save a Facebook video.",
-      "strict": false,
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "link": {
-            "type": "string",
-            "description": "The full Facebook video URL (e.g., 'https://www.facebook.com/watch?v=...', 'https://fb.watch/...')"
-          },
-          "location": {
-            "type": "string",
-            "description": "Subfolder name under the user's home directory where the video will be saved. Defaults to 'Downloads'.",
-            "default": "Downloads"
-          }
-        },
-        "required": ["link"]
+        "required": ["link", "download_path", "media_type"]
       }
     }
   },
@@ -563,5 +497,27 @@
       "required": ["mode"]
     }
   }
-}
+},
+  {
+    "type": "function",
+    "function": {
+      "name": "software_opener",
+      "description": "Opens, closes, or lists installed software applications.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the app (e.g., 'notepad') or 'list' to see all apps."
+          },
+          "func": {
+            "type": "string",
+            "enum": ["open", "close"],
+            "description": "Whether to open or close the specified application. Defaults to 'open'."
+          }
+        },
+        "required": ["name"]
+      }
+    }
+  }
 ]
