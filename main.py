@@ -157,7 +157,7 @@ def summarize(custom_prompt = None):
         }
     )
     try:
-        with console.status("[green dim] Summarizing the chat[/green dim]", spinner="dots") as status:
+        with console.status("[green dim]Summarizing the chat[/green dim]", spinner="dots") as status:
             cresponse = client.chat.completions.create(
                 messages = Chat_completion,
                 model = model

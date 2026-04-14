@@ -16,3 +16,4 @@ ffmpeg
 piper-tts
 tomlkit 
 AppOpener
+git+https://github.com/Praneeth-Gandodi/markrender

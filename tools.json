@@ -519,5 +519,26 @@
         "required": ["name"]
       }
     }
+  },
+  {
+  "type": "function",
+  "function": {
+    "name": "open_browser",
+    "description": "Opens a URL in a web browser. Uses a custom browser executable path from tool_settings.toml if configured, otherwise falls back to the system default browser.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "link": {
+          "type": "string",
+          "description": "The URL to open in the web browser."
+        }
+      },
+      "required": ["link"]
+    },
+    "returns": {
+      "type": "boolean",
+      "description": "True if the link was successfully opened, False otherwise."
+    }
   }
+}
 ]

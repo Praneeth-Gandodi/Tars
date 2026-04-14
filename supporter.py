@@ -11,6 +11,7 @@ from tools.file_handler import *
 from tools.sptest import sptest
 from tools.memory import *
 from tools.app_open import software_opener
+from tools.web_browser import open_browser
 
 console = Console()
 
@@ -43,7 +44,8 @@ available_functions = {
     "clear_console":clear_console,
     "sptest": sptest,
     "manage_memory":manage_memory,
-    "software_opener": software_opener
+    "software_opener": software_opener,
+    "open_browser": open_browser
 }
 
 def tars_settings():

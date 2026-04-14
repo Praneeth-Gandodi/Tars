@@ -47,45 +47,56 @@ def list_files_by_types(directory:str , ext:list):
         files.extend([item.name for item in dir_path.glob(extension)])
     return files
 
-def read_file_content(directory:str):
+def read_file_content(directory: str):
     """
     Returns the file content of the file.
     Args:
         directory (str): location of the file you want to open with the file name and extension.
     Returns:
-        text (str): returns the content in the file. If file not found returns FileNotExist. 
+        str | dict: returns the content in the file or an error message.
     """
-    dir_path = homedir / directory
-    dir = Path(dir_path)
-    supported_files = [".txt",".md",".csv",".log",".ini",".cfg",".env",".py",".html",".css",".js",".xml",".yaml",".yml"]
+    file_path = homedir / directory
+    path = Path(file_path)
 
-    if not dir.exists():
-        return f"File path does not exists {dir}"
-    
-    file_type = Path(dir_path).suffix
-    if file_type.strip() in supported_files:
-        content = dir.read_text()
-    elif file_type.strip() == ".json":
-        try:
-            with dir.open("r") as f:
-                content = json.load(f)
-        except Exception as e:
-            return f"Error Occured while reading the file: {e}"
-    elif file_type in ".docx":
-        try:
-            dir = Document(dir)
-            return "\n".join(p.text for p in dir.paragraphs if p.text.strip())
-        except Exception as e:
-            return f"Error: Unable to read the file {e}"
-    elif file_type == ".pdf":
-        try:
-            reader = PdfReader(dir)
+    supported_files = [
+        ".txt", ".csv", ".log", ".ini", ".cfg", ".env",
+        ".py", ".html", ".css", ".js", ".xml", ".yaml", ".yml"
+    ]
+
+    if not path.exists():
+        return f"File path does not exist {path}"
+
+    file_type = path.suffix.lower()
+
+    try:
+        # Markdown → force UTF-8
+        if file_type == ".md":
+            return path.read_text(encoding="utf-8")
+
+        # Other supported text files
+        if file_type in supported_files:
+            return path.read_text()
+
+        # JSON
+        if file_type == ".json":
+            with path.open("r", encoding="utf-8") as f:
+                return json.load(f)
+
+        # DOCX
+        if file_type == ".docx":
+            doc = Document(path)
+            return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+
+        # PDF
+        if file_type == ".pdf":
+            reader = PdfReader(path)
             return "\n".join(page.extract_text() or "" for page in reader.pages)
-        except Exception as e:
-            return f"Error: Unable to read the PDF file: {e}"
-    else:
-        return f"File type not supported"
-    return content
+
+        return "File type not supported"
+
+    except Exception as e:
+        return f"Error occurred while reading the file: {e}"
+
 
 from pathlib import Path
 

@@ -1,8 +1,4 @@
 import speedtest
-from rich.console import Console 
-
-
-console = Console()
 def sptest():
     """
     Retuns internet speed 

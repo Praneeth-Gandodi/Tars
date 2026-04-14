@@ -10,9 +10,13 @@ token_check.py
 tokens_check.txt
 tars.db
 tools/browser_control.py
+tools/settings.toml
 Local_LLM.py
 Markdown/
 tools/web_crawl.py
+REFACTOR_PLAN.md
+opencode.json
+test.json
 Provider/
 memory.md
 tools/tools_settings.json

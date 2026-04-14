@@ -1,9 +1,12 @@
 import logging
 import sys
+
+from httpx import stream
 import main
 from main import *
 from styling import starting, input_type
-from rich.markdown import Markdown
+# from rich.markdown import Markdown
+from markrender import MarkdownRenderer
 from rich.panel import Panel
 from rich.spinner import Spinner
 from supporter import *
@@ -17,6 +20,8 @@ logging.getLogger("RealtimeSTT").setLevel(logging.CRITICAL)
 logging.getLogger("faster_whisper").setLevel(logging.CRITICAL)
 logging.getLogger("httpx").setLevel(logging.CRITICAL)
 logging.getLogger("httpcore").setLevel(logging.CRITICAL)
+
+renderer = MarkdownRenderer(stream_code=False)
 
 def tars():
     global ccount
@@ -79,18 +84,21 @@ def tars():
                 console.print(f"[grey93]{summary_text}[/grey93]") 
             
         try:
-            md = Markdown(status)
+            # md = Markdown(status, code_theme="github-dark" , )
             ccount += 1
-            console.print(
-                Panel(
-                md, title="[white]Tars[/white]",
-                subtitle=f"[white]~ {ccount}[/white]",
-                subtitle_align="right",
-                title_align="left",
-                border_style="green" ),
-                overflow="fold",
-                no_wrap=False)
-            print()
+            # console.print(
+            #     Panel(
+            #     md, title="[white]Tars[/white]",
+            #     subtitle=f"[white]~ {ccount}[/white]",
+            #     subtitle_align="right",
+            #     title_align="left",
+            #     border_style="green" ),
+            #     overflow="fold",
+            #     no_wrap=False)
+            # print()
+
+            renderer.render(status)
+            renderer.finalize()
             if audio_reply:
                 tts_pipeline(text=status)
         except Exception as e:
