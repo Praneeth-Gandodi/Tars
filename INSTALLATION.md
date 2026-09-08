@@ -195,7 +195,9 @@ You'll get a mode picker:
 
 - **1 — Text → Text**: type, TARS replies. Works everywhere, no audio needed.
 - **2 — Voice → Voice**: speak, hear the reply, and interrupt by talking over it.
-- **3 — Voice → Text**: speak, read the reply.
+  Say `exit`/`stop`, or press Ctrl+C while listening, to quit (Ctrl+C while
+  TARS is talking only stops playback).
+- **3 — Voice → Text**: speak, read the reply. Same quit paths as voice mode.
 
 ### Commands while chatting
 

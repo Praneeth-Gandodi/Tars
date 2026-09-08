@@ -45,6 +45,7 @@ def tars():
 
     main.current_session_id = create_new_session(main.model_id)
     opt = input_type()
+    voice_mode = opt in ("2", "3")  # no typed /exit there — Ctrl+C must quit
 
     if opt == "1":
         func = text_input
@@ -68,6 +69,7 @@ def tars():
             console.print(f"[red dim]Error: {e}[/red dim]")
         func = Audio
         audio_reply = True
+        main.enable_tts_style()  # model replies come out speakable for the TTS
         initialize_recorder()  # VAD runs in the background so speech can interrupt TTS
     else:
         console.print("[red]Invalid choice[/red]")
@@ -77,6 +79,17 @@ def tars():
         try:
             status = get_ai(func)
         except KeyboardInterrupt:
+            if voice_mode:
+                # Voice modes have no keyboard to type /exit with:
+                # Ctrl+C while listening quits gracefully.
+                console.print("\n[bold yellow]Stopping voice mode...[/bold yellow]")
+                try:
+                    from speech_to_text import shutdown_recorder
+                    shutdown_recorder()
+                except Exception:
+                    pass
+                end_session(main.current_session_id)
+                sys.exit(1)
             console.print(
                 "\n[bold yellow]Keyboard intereption detected type '/exit' to quit.[/bold yellow]"
             )
@@ -103,10 +116,16 @@ def tars():
         try:
             renderer.render(status)
             renderer.finalize()
-            if audio_reply:
-                tts_pipeline(text=status, interrupt_event=interrupt_event)
         except Exception as e:
             console.print(status)
+        if audio_reply:
+            try:
+                tts_pipeline(text=status, interrupt_event=interrupt_event)
+            except KeyboardInterrupt:
+                # Ctrl+C while TARS is talking stops playback only — you stay
+                # in voice mode and go back to listening. (Ctrl+C while
+                # listening quits — see above.)
+                console.print("\n[yellow]Playback interrupted - listening...[/yellow]")
         print()  # blank line after the reply, before the next prompt
 
         # After every response, maybe compact the context (runs every N turns).
