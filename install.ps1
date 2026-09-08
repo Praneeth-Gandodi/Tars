@@ -3,15 +3,22 @@
   TARS - Voice AI Assistant
   Windows installer (PowerShell)
 ============================================================================
-  - Creates a Python 3.12 virtual environment
-  - Installs Python dependencies
-  - Installs the Playwright / Chromium browser (browser automation tools)
-  - Sets up .env with your Groq API key
-  - (Optional) pre-warms the speech-to-text model so voice mode is instant
+  One command, from any folder:
 
-  Run it from PowerShell:
       Set-ExecutionPolicy -Scope Process Bypass   # once, if needed
-      .\install.ps1
+      irm https://raw.githubusercontent.com/Praneeth-Gandodi/Tars/dev/install.ps1 | iex
+
+  The script does EVERYTHING for you:
+    - Installs Python 3.12 itself (via winget) if it isn't installed yet
+    - Clones the project (dev branch) into .\Tars and keeps you on 'dev'
+    - Creates a Python 3.12 virtual environment
+    - Installs all Python dependencies
+    - Installs the Playwright / Chromium browser (browser automation)
+    - Sets up .env with your Groq API key
+    - Pre-warms the speech-to-text model for instant voice
+
+  You can also run it from inside a Tars folder (it detects and reuses it),
+  and it is idempotent: re-run any time to repair or upgrade.
 
   Flags:
       .\install.ps1 -NoVoice        # skip voice-model prewarming (faster)
@@ -40,7 +47,7 @@ Write-Host @"
 "@ -ForegroundColor Magenta
 
 # ---------------------------------------------------------------
-# 1. Locate Python 3.12
+# 1. Locate Python 3.12 — or install it via winget if missing
 # ---------------------------------------------------------------
 Write-Step "Looking for Python 3.12"
 
@@ -63,22 +70,40 @@ if (-not $python) {
 }
 
 if (-not $python) {
-    Write-Warn "Python 3.12 was not found."
-    Write-Host @"
+    Write-Warn "Python 3.12 was not found - installing it now via winget."
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        winget install -e --id Python.Python.3.12 --accept-source-agreements --accept-package-agreements
+        # A fresh Python may not be on PATH for this session; locate it directly.
+        $candidates = @(
+            "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe",
+            "C:\Program Files\Python312\python.exe"
+        )
+        $found = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if ($found) {
+            $python = $found
+            $pythonCmd = $found
+            Write-Ok "Installed Python 3.12 via winget."
+        } else {
+            Write-Warn "Python was installed but not found on this session's PATH."
+            Write-Host  "  Open a NEW terminal and re-run this script."
+            exit 1
+        }
+    } else {
+        Write-Host @"
 
-  Install Python 3.12 from https://www.python.org/downloads/
+  winget is unavailable. Install Python 3.12 from https://www.python.org/downloads/
   IMPORTANT: on the installer, tick  "Add python.exe to PATH".
-
-  Then re-run this script.
+  Then open a NEW terminal and re-run this script.
 
 "@
-    exit 1
+        exit 1
+    }
 }
 
 Write-Ok "Using Python: $python"
 
 # ---------------------------------------------------------------
-# 2. Clone or reuse the project
+# 2. Clone or reuse the project (into .\Tars so the one-liner works)
 # ---------------------------------------------------------------
 Write-Step "Preparing the project folder"
 if (-not (Test-Path ".\tars.py")) {
@@ -87,9 +112,24 @@ if (-not (Test-Path ".\tars.py")) {
         Write-Host "Install Git from https://git-scm.com/download/win and re-run."
         exit 1
     }
-    git clone $RepoUrl .
-    if ($LASTEXITCODE -ne 0) { Write-Host "Clone failed." -ForegroundColor Red; exit 1 }
-    Write-Ok "Cloned TARS from $RepoUrl"
+    if (-not (Test-Path ".\Tars")) {
+        git clone $RepoUrl Tars
+        if ($LASTEXITCODE -ne 0) { Write-Host "Clone failed." -ForegroundColor Red; exit 1 }
+        Write-Ok "Cloned TARS."
+    } else {
+        Write-Ok "Tars folder already exists - reusing it."
+    }
+    Set-Location ".\Tars"
+    # Fresh clones land on the default branch; the install files live on 'dev'.
+    git checkout dev 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Ok "On the 'dev' branch."
+    } else {
+        git fetch origin dev
+        git checkout dev
+        if ($LASTEXITCODE -ne 0) { Write-Warn "Could not switch to 'dev'. Install files may be missing." }
+        Write-Ok "On the 'dev' branch."
+    }
 } else {
     Write-Ok "tars.py already present in this folder - reusing it."
 }
@@ -101,9 +141,10 @@ Write-Step "Creating a virtual environment"
 if (-not (Test-Path ".\.venv")) {
     $venvArgs = @("-m", "venv", ".venv")
     if ($pythonCmd) {
-        # $pythonCmd may be "python" or "py -3.12" — expand by context.
-        if ($pythonCmd -match " ") {
-            $parts = $pythonCmd -split " ", 2
+        # $pythonCmd may be "python", "py -3.12", or a full path with spaces.
+        if ($pythonCmd -match '^py\s+') {
+            # py launcher with an explicit version tag — split command + tag.
+            $parts = $pythonCmd -split "\s+", 2
             & $parts[0] $parts[1] @venvArgs
         } else {
             & $pythonCmd @venvArgs
@@ -117,14 +158,14 @@ if (-not (Test-Path ".\.venv")) {
     Write-Ok "Virtual environment already exists."
 }
 
-$pip = ".\.venv\Scripts\python.exe -m pip"
+$venvPython = ".\.venv\Scripts\python.exe"
 
 # ---------------------------------------------------------------
 # 4. Upgrade pip and install Python dependencies
 # ---------------------------------------------------------------
 Write-Step "Installing Python dependencies (this may take a few minutes)"
-& $pip install --upgrade pip
-& $pip install -r requirements.txt
+& $venvPython -m pip install --upgrade pip
+& $venvPython -m pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) { Write-Host "Dependency install failed." -ForegroundColor Red; exit 1 }
 Write-Ok "Python dependencies installed."
 
@@ -146,7 +187,7 @@ if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
 # ---------------------------------------------------------------
 if (-not $SkipBrowser) {
     Write-Step "Installing Playwright Chromium (browser automation)"
-    & $pip install playwright
+    & $venvPython -m pip install playwright
     & .\.venv\Scripts\playwright.exe install chromium
     if ($LASTEXITCODE -ne 0) {
         Write-Warn "Chromium install had issues. Text + most tools still work;"

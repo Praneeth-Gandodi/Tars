@@ -35,8 +35,8 @@ Built as a learning project: it covers offline speech recognition (RealtimeSTT /
 
 ## Prerequisites
 
-- Python 3.12.x
 - A free Groq API key from <https://console.groq.com/keys>
+- (Python 3.12 is installed **for you** by the installers below)
 
 ## Install
 
@@ -45,28 +45,24 @@ Built as a learning project: it covers offline speech recognition (RealtimeSTT /
 > same code everywhere and downloads only the deps + one speech model.
 >
 > **Full walkthrough:** see [`INSTALLATION.md`](INSTALLATION.md).
->
-> > **⚠️ Use the `dev` branch.** The installers and this guide live on **`dev`**,
-> > not the default `main` branch. `git checkout dev` right after cloning.
 
 ### One-command installer
 
+One copy-paste per platform — the installer clones TARS (auto-switches to the
+**`dev`** branch), installs **Python 3.12** if needed, system libraries, a
+`.venv`, all Python deps, Chromium, and prompts for your Groq key:
+
 ```bash
 # Windows (PowerShell):
-git clone https://github.com/Praneeth-Gandodi/Tars.git && cd Tars
-git checkout dev                  # ← switch to dev first
-.\install.ps1
+Set-ExecutionPolicy -Scope Process Bypass
+irm https://raw.githubusercontent.com/Praneeth-Gandodi/Tars/dev/install.ps1 | iex
 
 # macOS / Linux / WSL2:
-git clone https://github.com/Praneeth-Gandodi/Tars.git && cd Tars
-git checkout dev                  # ← switch to dev first
-chmod +x install.sh && ./install.sh
+curl -fsSL https://raw.githubusercontent.com/Praneeth-Gandodi/Tars/dev/install.sh | bash
 ```
 
-Each installer detects your OS, installs system libraries (ffmpeg, audio, browser
-deps), creates a `.venv`, installs Python deps, sets up the Chromium browser,
-prompts for your Groq API key, and pre-warms the speech model. Idempotent — rerun
-any time to repair or upgrade.
+Idempotent — rerun any time to repair or upgrade; it simply picks up where it
+left off.
 
 ### Manual setup
 
@@ -97,7 +93,11 @@ cp .env.example .env      # then paste your Groq API key + model into .env
 
 ## Run
 
+If you used the one-command installer, TARS is in a `Tars` folder where you ran
+it. Step inside and run:
+
 ```bash
+cd Tars        # skip if you're already in the Tars folder
 python tars.py
 ```
 
