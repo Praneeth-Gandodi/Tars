@@ -36,6 +36,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Bump this whenever installer behavior changes. It prints in the banner so
+# pasted logs reveal exactly which script copy ran — raw.githubusercontent.com
+# caches for a few minutes, so a re-run right after a fix may use a stale copy.
+$InstallerRev = "2026-09-08e"
+
 function Write-Step { param([string]$msg) Write-Host "`n=== $msg ===" -ForegroundColor Cyan }
 function Write-Ok    { param([string]$msg) Write-Host "  [OK] $msg" -ForegroundColor Green }
 function Write-Warn  { param([string]$msg) Write-Host "  [!!] $msg" -ForegroundColor Yellow }
@@ -43,6 +48,7 @@ function Write-Warn  { param([string]$msg) Write-Host "  [!!] $msg" -ForegroundC
 Write-Host @"
 =====================================================================
   TARS  -  Voice AI Assistant  (Windows installer)
+  installer rev $InstallerRev (https://github.com/Praneeth-Gandodi/Tars/tree/dev)
 =====================================================================
 "@ -ForegroundColor Magenta
 

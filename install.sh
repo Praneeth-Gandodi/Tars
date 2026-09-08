@@ -34,6 +34,11 @@
 
 set -euo pipefail
 
+# Bump this whenever installer behavior changes. It prints in the banner so
+# pasted logs reveal exactly which script copy ran — raw.githubusercontent.com
+# caches for a few minutes, so a re-run right after a fix may use a stale copy.
+INSTALLER_REV="2026-09-08e"
+
 REPO_URL="https://github.com/Praneeth-Gandodi/Tars.git"
 DO_VOICE=1
 DO_BROWSER=1
@@ -98,6 +103,7 @@ ensure_brew() {
 echo ""
 echo "====================================================================="
 echo "  TARS  -  Voice AI Assistant  (macOS / Linux / WSL2 installer)"
+echo "  installer rev $INSTALLER_REV (https://github.com/Praneeth-Gandodi/Tars/tree/dev)"
 echo "====================================================================="
 
 DETECT_OS="$(uname -s)"
