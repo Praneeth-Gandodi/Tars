@@ -1,8 +1,10 @@
 try:
-    # AppOpener raises at import time on non-Windows (Linux / WSL2 / Docker),
-    # so catch it and degrade to a friendly message instead of crashing.
+    # AppOpener raises at import time on non-Windows (Linux / WSL2 / Docker):
+    # it prints a message and calls exit(), which raises SystemExit — a
+    # BaseException, not an Exception. Catch BaseException so the import degrades
+    # to a friendly message instead of crashing the whole app.
     from AppOpener import open as open_app, give_appnames, close as close_app
-except Exception:
+except BaseException:
     open_app = None
     give_appnames = None
     close_app = None
