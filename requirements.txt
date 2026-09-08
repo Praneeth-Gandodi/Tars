@@ -1,4 +1,5 @@
 RealtimeSTT
+faster-whisper
 groq
 python-dotenv
 rich
