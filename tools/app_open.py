@@ -1,10 +1,16 @@
-try:
-    # AppOpener raises at import time on non-Windows (Linux / WSL2 / Docker):
-    # it prints a message and calls exit(), which raises SystemExit — a
-    # BaseException, not an Exception. Catch BaseException so the import degrades
-    # to a friendly message instead of crashing the whole app.
-    from AppOpener import open as open_app, give_appnames, close as close_app
-except BaseException:
+import sys
+
+# AppOpener is a Windows-only package: importing it anywhere else raises
+# (and prints import-time noise), so off-Windows we don't import it at all —
+# the tool is simply not registered there (see supporter.py / main.py).
+if sys.platform == "win32":
+    try:
+        from AppOpener import open as open_app, give_appnames, close as close_app
+    except BaseException:
+        open_app = None
+        give_appnames = None
+        close_app = None
+else:
     open_app = None
     give_appnames = None
     close_app = None

@@ -69,6 +69,11 @@ except FileNotFoundError:
     sys.exit()
 except json.JSONDecodeError as e:
     console.print()
+
+if sys.platform != "win32":
+    # software_opener is Windows-only and unregistered off-Windows
+    # (see supporter.py) — hide its schema so the model never calls it.
+    tools = [t for t in tools if t.get("function", {}).get("name") != "software_opener"]
     
 def get_settings():
     try:

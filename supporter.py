@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 from rich.console import Console
 from tools.weather import get_weather
 from tools.DateTime import *
@@ -10,7 +11,10 @@ from tools.video_download import *
 from tools.file_handler import *
 from tools.sptest import sptest
 from tools.memory import *
-from tools.app_open import software_opener
+if sys.platform == "win32":
+    # App opener is Windows-only (AppOpener raises on any other OS, and is
+    # never imported there — see tools/app_open.py).
+    from tools.app_open import software_opener
 from tools.web_browser import open_browser
 from tools.browser_control import (
     browser_navigate,
@@ -54,7 +58,6 @@ available_functions = {
     "clear_console":clear_console,
     "sptest": sptest,
     "manage_memory":manage_memory,
-    "software_opener": software_opener,
     "open_browser": open_browser,
     "browser_navigate": browser_navigate,
     "browser_extract": browser_extract,
@@ -65,6 +68,10 @@ available_functions = {
     "browser_close": browser_close,
     "system_info": system_info,
 }
+
+if sys.platform == "win32":
+    # Registered only on Windows — AppOpener doesn't exist anywhere else.
+    available_functions["software_opener"] = software_opener
 
 def tars_settings():
     console.print("Settings")
