@@ -19,8 +19,28 @@ logging.getLogger("httpcore").setLevel(logging.CRITICAL)
 renderer = MarkdownRenderer(stream_code=False)
 
 
+def _stdin_available():
+    """True when keyboard input can actually be read.
+
+    Catches launches with a closed/redirected stdin (IDE internal consoles,
+    pipes, background tasks...) so we can say so plainly instead of dying
+    later with 'I/O operation on closed file'.
+    """
+    try:
+        return sys.stdin is not None and not sys.stdin.closed and sys.stdin.isatty()
+    except Exception:
+        return False
+
+
 def tars():
     audio_reply = False
+    if not _stdin_available():
+        console.print("[red]Cannot read keyboard input - stdin is closed or redirected.[/red]")
+        console.print("TARS is interactive: run it directly in a terminal, e.g.")
+        console.print("  Linux/macOS:  .venv/bin/python tars.py")
+        console.print("  Windows:      .venv\\Scripts\\python.exe tars.py")
+        console.print("[dim]Not via a pipe, an IDE 'internal console', or a background task.[/dim]")
+        sys.exit(1)
     starting()
 
     main.current_session_id = create_new_session(main.model_id)

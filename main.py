@@ -441,7 +441,12 @@ def tool_calling(m_chat):
 
 
 def text_input():
-    inp = console.input("[green]>> [/green]")
+    try:
+        inp = console.input("[green]>> [/green]")
+    except EOFError:
+        # Ctrl+D / stdin ended: quit gracefully instead of crashing.
+        console.print("[red]TARS SHUTDOWN SUCCESSFULL[/red]")
+        return "/exit"
     print()
     if inp.strip() == "":
         return text_input()
