@@ -15,7 +15,7 @@
     - Installs all Python dependencies
     - Installs the Playwright / Chromium browser (browser automation)
     - Sets up .env with your Groq API key
-    - Pre-warms the speech-to-text model for instant voice
+    - Pre-warms the voice models (Whisper STT + Silero VAD) for instant voice
 
   You can also run it from inside a Tars folder (it detects and reuses it),
   and it is idempotent: re-run any time to repair or upgrade.
@@ -280,13 +280,23 @@ if ($dotenv -match "your_groq_api_key_here") {
 # 8. (Optional) Pre-warm the speech-to-text model for instant voice
 # ---------------------------------------------------------------
 if (-not $NoVoice) {
-    Write-Step "Pre-warming the voice recognition model (~250MB, one-time)"
-    Write-Host  "  This makes first voice use instant. Skip with: -NoVoice"
-    & .\.venv\Scripts\python.exe -c "from faster_whisper import WhisperModel; WhisperModel('small.en', device='cpu', compute_type='int8')"
+    Write-Step "Pre-warming the voice models (~250MB, one-time)"
+    Write-Host  "  Whisper (speech-to-text) + Silero (voice-activity detection). Skip with: -NoVoice"
+    & $venvPython -c "from faster_whisper import WhisperModel; WhisperModel('small.en', device='cpu', compute_type='int8')"
     if ($LASTEXITCODE -eq 0) {
         Write-Ok "Whisper STT model cached in your user folder."
     } else {
-        Write-Warn "Model pre-warm failed - TARS will download it on first voice use instead."
+        Write-Warn "Whisper pre-warm failed - TARS will download it on first voice use instead."
+    }
+    # Silero VAD is downloaded by RealtimeSTT at recorder init. trust_repo=True
+    # answers torch's trust prompt non-interactively AND records the repo in
+    # torch's trusted list, so first voice use needs no download and never
+    # hangs on a (y/N) prompt.
+    & $venvPython -c "import torch; torch.hub.load('snakers4/silero-vad', 'silero_vad', trust_repo=True)"
+    if ($LASTEXITCODE -eq 0) {
+        Write-Ok "Silero VAD model cached + trusted."
+    } else {
+        Write-Warn "Silero pre-warm failed - TARS will download it on first voice use instead."
     }
 }
 

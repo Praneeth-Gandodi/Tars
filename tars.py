@@ -83,6 +83,15 @@ def tars():
             print()
             continue
 
+        if status is None:
+            # Voice capture failed (no mic / init error) — drop to text mode
+            # instead of looping on failures.
+            console.print("[yellow]Voice input unavailable — switching to text mode.[/yellow]")
+            print()
+            func = text_input
+            audio_reply = False
+            continue
+
         if status == "/exit":
             end_session(main.current_session_id)
             sys.exit(1)

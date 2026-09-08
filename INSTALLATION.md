@@ -62,7 +62,8 @@ Paste **one line** into your terminal. That's it — the installer:
    hardware situation changed.
 6. Installs the **Chromium browser** for the browser-automation tools.
 7. Creates `.env` and asks for your **Groq API key**.
-8. **Pre-warms the speech-to-text model** so voice mode is instant.
+8. **Pre-warms the voice models** (Whisper STT + Silero VAD) so first voice use
+   needs no downloads and never hangs on a trust prompt.
 
 It is **idempotent** — run it again any time to repair or upgrade; it simply
 picks up where it left off.
@@ -279,10 +280,19 @@ Text** at the start.
 - **Piper TTS voice** (`en_US-norman-medium.onnx`, ~60 MB) is **bundled in the
   repo** under `assets/tts_models/` — nothing to download; it's already there.
 - **Whisper STT model** (`small.en`, ~250 MB) is downloaded by the installer's
-  pre-warm step and cached once. Later runs reuse the cache — no re-download.
+  pre-warm step and cached once (`~/.cache/huggingface`).
+- **Silero VAD model** (~2 MB, voice-activity detection) is also pre-warmed by
+  the installer into torch's hub cache (`~/.cache/torch/hub`) **and** added to
+  torch's trusted list — so entering voice mode never downloads and never hangs
+  on a `(y/N)` trust prompt.
 
-If you skipped the pre-warm (`--no-voice` / `-NoVoice`), the model downloads
+If you skipped the pre-warm (`--no-voice` / `-NoVoice`), the models download
 automatically the first time you enter a voice mode. Job done.
+
+> **No microphone / no audio device?** TARS tells you voice input is unavailable
+> and drops to text mode automatically. On WSL2, voice needs the WSLg audio
+> bridge set up (see the WSL2 section above) — without it there is simply no
+> sound card for voice mode to use.
 
 ---
 
@@ -302,6 +312,7 @@ automatically the first time you enter a voice mode. Job done.
 | Video download fails on `ffmpeg` | Install / add `ffmpeg` to PATH (needed for merging audio+video). |
 | `SystemExit` on Linux at startup | Depends on an old app_open import — update to the latest commit (`git pull`). |
 | Slow first voice run | That's the whisper model caching. It's a one-time ~250 MB download. |
+| Voice mode falls straight back to text | No usable microphone. On native Linux check `pactl list sources`; on WSL2 set up the WSLg audio bridge (see the WSL2 section). |
 | GPU? | TARS runs on CPU by default and works fine. No CUDA needed. |
 
 ---

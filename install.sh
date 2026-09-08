@@ -20,7 +20,7 @@
 #    - Creates a virtual environment + installs all Python dependencies
 #    - Installs the Playwright / Chromium browser (browser automation)
 #    - Sets up .env with your Groq API key
-#    - Pre-warms the speech-to-text model for instant voice
+#    - Pre-warms the voice models (Whisper STT + Silero VAD) for instant voice
 #
 #  You can also run it from inside a Tars folder (it detects and reuses it),
 #  and it is idempotent: re-run any time to repair or upgrade.
@@ -426,11 +426,19 @@ fi
 # 8. (Optional) Pre-warm the speech-to-text model for instant voice
 # ------------------------------------------------------------------
 if [ "$DO_VOICE" -eq 1 ]; then
-    step "Pre-warming the voice recognition model (~250MB, one-time)"
-    echo "  This makes first voice use instant. Skip with: --no-voice"
+    step "Pre-warming the voice models (~250MB, one-time)"
+    echo "  Whisper (speech-to-text) + Silero (voice-activity detection)."
+    echo "  Skip with: --no-voice"
     "$PY" -c "from faster_whisper import WhisperModel; WhisperModel('small.en', device='cpu', compute_type='int8')" \
         && ok "Whisper STT model cached." \
-        || warn "Model pre-warm failed - TARS downloads it on first voice use instead."
+        || warn "Whisper pre-warm failed - TARS downloads it on first voice use instead."
+    # Silero VAD is downloaded by RealtimeSTT at recorder init. trust_repo=True
+    # answers torch's trust prompt non-interactively AND records the repo in
+    # torch's trusted list, so first voice use needs no download and never
+    # hangs on a (y/N) prompt.
+    "$PY" -c "import torch; torch.hub.load('snakers4/silero-vad', 'silero_vad', trust_repo=True)" \
+        && ok "Silero VAD model cached + trusted." \
+        || warn "Silero pre-warm failed - TARS downloads it on first voice use instead."
 fi
 
 # ------------------------------------------------------------------

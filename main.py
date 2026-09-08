@@ -115,6 +115,11 @@ def get_ai(func):
     global current_session_id
     global model_id
     user_input = func()
+    if user_input is None:
+        # Voice capture failed outright (the error was already printed).
+        # Return None so the caller can fall back instead of sending
+        # a null message to the model.
+        return None
     cmd = user_input.strip().lower() if isinstance(user_input, str) else user_input
     if cmd in ["/quit", "/exit", "quit", "exit", "stop", "q"]:
         end_session(current_session_id)

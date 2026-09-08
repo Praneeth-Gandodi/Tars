@@ -6,6 +6,8 @@ from rich.text import Text
 import sys
 import logging
 import threading
+import contextlib
+import os
 
 
 logging.getLogger("RealtimeSTT").setLevel(logging.CRITICAL)
@@ -37,6 +39,31 @@ def _pick_stt_device():
 ## speaking. TTS playback polls this so voice can interrupt TARS talking.
 interrupt_event = threading.Event()
 
+@contextlib.contextmanager
+def _mute_native_stderr():
+    """Mute C-level stderr (fd 2) for a short block.
+
+    PortAudio/ALSA probe every device handle when the recorder is built and
+    scream native errors (no card, no JACK server, no /dev/dsp...) on machines
+    with missing or misrouted audio. Python exceptions still propagate — only
+    the native spam is hidden, and only during init.
+    """
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        saved = os.dup(2)
+    except OSError:
+        yield  # fd games impossible here (e.g. no stderr) — just proceed
+        return
+    try:
+        os.dup2(devnull, 2)
+        yield
+    finally:
+        try:
+            os.dup2(saved, 2)
+        finally:
+            os.close(saved)
+            os.close(devnull)
+
 def initialize_recorder():
     """Initialize the recorder once"""
     global recorder
@@ -47,19 +74,20 @@ def initialize_recorder():
             console.print("[green dim]NVIDIA GPU detected — using it for speech recognition[/green dim]")
         try:
             with console.status("[green dim]Initializing Recorder[/green dim]", spinner="dots") as status:
-                recorder = AudioToTextRecorder(
-                    model='small.en',
-                    language='en',
-                    device=stt_device,
-                    compute_type=stt_compute,
-                    post_speech_silence_duration=2.0,
-                    silero_sensitivity=0.5,
-                    enable_realtime_transcription=True,
-                    on_realtime_transcription_update=on_partial,
-                    on_recording_start=lambda: interrupt_event.set(),
-                    spinner=False,
-                    level=logging.CRITICAL, 
-                )
+                with _mute_native_stderr():
+                    recorder = AudioToTextRecorder(
+                        model='small.en',
+                        language='en',
+                        device=stt_device,
+                        compute_type=stt_compute,
+                        post_speech_silence_duration=2.0,
+                        silero_sensitivity=0.5,
+                        enable_realtime_transcription=True,
+                        on_realtime_transcription_update=on_partial,
+                        on_recording_start=lambda: interrupt_event.set(),
+                        spinner=False,
+                        level=logging.CRITICAL,
+                    )
         except Exception as e:
             console.print(f"[red]Error initializing recorder: {e}[/red]")
             return False
