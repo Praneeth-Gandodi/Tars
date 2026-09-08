@@ -18,6 +18,21 @@ console = Console()
 recorder = None
 live_display = None
 
+def _pick_stt_device():
+    """Use the NVIDIA GPU for transcription when one is usable, else CPU.
+
+    Matches the installer: GPU machines get CUDA PyTorch, GPU-less machines
+    get the CPU-only build — so torch.cuda.is_available() is only ever true
+    where the CUDA wheels are actually installed.
+    """
+    try:
+        import torch
+        if torch.cuda.is_available():
+            return "cuda", "float16"
+    except Exception:
+        pass
+    return "cpu", "float32"
+
 ## Thread-safe flag raised the moment the VAD detects the user starts
 ## speaking. TTS playback polls this so voice can interrupt TARS talking.
 interrupt_event = threading.Event()
@@ -27,13 +42,16 @@ def initialize_recorder():
     global recorder
     
     if recorder is None:
+        stt_device, stt_compute = _pick_stt_device()
+        if stt_device == "cuda":
+            console.print("[green dim]NVIDIA GPU detected — using it for speech recognition[/green dim]")
         try:
             with console.status("[green dim]Initializing Recorder[/green dim]", spinner="dots") as status:
                 recorder = AudioToTextRecorder(
                     model='small.en',
                     language='en',
-                    device="cpu", 
-                    compute_type="float32",
+                    device=stt_device,
+                    compute_type=stt_compute,
                     post_speech_silence_duration=2.0,
                     silero_sensitivity=0.5,
                     enable_realtime_transcription=True,

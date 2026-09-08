@@ -55,7 +55,10 @@ Paste **one line** into your terminal. That's it — the installer:
    including the venv package matching its Python, so `python -m venv` never
    fails with "ensurepip is not available".
 4. Creates an isolated Python **virtual environment** (`.venv`).
-5. Installs **all Python dependencies**.
+5. Installs **all Python dependencies** — GPU-aware: full CUDA PyTorch when an
+   NVIDIA GPU is detected, tiny CPU-only PyTorch otherwise (skips ~1.5GB of
+   NVIDIA wheels). Re-running later swaps the build automatically if your
+   hardware situation changed.
 6. Installs the **Chromium browser** for the browser-automation tools.
 7. Creates `.env` and asks for your **Groq API key**.
 8. **Pre-warms the speech-to-text model** so voice mode is instant.
@@ -105,6 +108,14 @@ That's it. The script detects your package manager (`apt` / `dnf` / `pacman`),
 installs Python 3.12 if needed, and installs the right libraries (ffmpeg,
 PortAudio, OpenMP, audio runtime). On **WSL2** the same command works — see the
 WSL2 audio section below to enable voice.
+
+> **NVIDIA GPU?** The installer checks with `nvidia-smi` (card + drivers must
+> both be present). GPU found → full CUDA PyTorch and GPU-accelerated
+> transcription. No GPU → CPU-only PyTorch (~1.5GB of CUDA downloads skipped)
+> and CPU transcription. macOS is always CPU (no CUDA on Mac). TARS picks the
+> right mode automatically at runtime — nothing to configure. A card *without*
+> drivers counts as "no GPU" (CUDA can't run anyway) — install drivers from
+> https://www.nvidia.com/drivers and re-run the installer to switch builds.
 
 ---
 
@@ -280,6 +291,7 @@ automatically the first time you enter a voice mode. Job done.
 |---|---|
 | `python` is not recognized (Windows, manual setup) | The installers install Python automatically. For manual setup: install Python 3.12 with **Add to PATH** ticked, open a **new** terminal. |
 | `ensurepip is not available` / venv creation fails (Debian/Ubuntu) | Handled automatically — the installer puts in the venv package matching its Python (`python3.X-venv`) and retries via `uv` if needed. Manual setup: `sudo apt install -y python3.X-venv` (X = your Python's minor version). |
+| Installer pulled huge `nvidia-*`/CUDA packages but I have no GPU | Re-run the installer — it detects GPUs and swaps CUDA PyTorch for the CPU-only build automatically (reclaims ~1.5GB). |
 | pip errors about `markrender` | It's installed from GitHub — you need git + network: `pip install -r requirements.txt` again. |
 | `AppOpener` / apps tool fails on Linux | By design — the app-opener tool is **Windows-only**. Other tools are unaffected. |
 | Voice picks up nothing | Check `.env` key; grant mic permission; ensure a default mic set. On Linux check `pactl list sources`. |

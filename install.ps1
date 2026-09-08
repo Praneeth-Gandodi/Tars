@@ -165,6 +165,56 @@ $venvPython = ".\.venv\Scripts\python.exe"
 # ---------------------------------------------------------------
 Write-Step "Installing Python dependencies (this may take a few minutes)"
 & $venvPython -m pip install --upgrade pip
+
+# PyTorch: full CUDA build only when an NVIDIA GPU is usable, tiny CPU-only
+# build otherwise (saves ~1.5GB of NVIDIA wheels). RealtimeSTT depends on
+# torch, and the default PyPI torch drags in all the nvidia-* CUDA packages.
+# Pre-installing the CPU build FIRST makes pip treat torch/torchaudio as
+# already satisfied, so it skips the CUDA junk.
+Write-Step "Setting up PyTorch (GPU or CPU)"
+$torchCuda = ((& $venvPython -c "import torch; print(torch.version.cuda)" 2>$null) | Out-String).Trim()
+if (-not $torchCuda) { $torchCuda = "missing" }
+$cuPkgs = @((& $venvPython -m pip list --format=freeze 2>$null | Where-Object { $_ -match "^nvidia-" } | ForEach-Object { ($_ -split "==")[0] }))
+$torchHere = ((& $venvPython -m pip show torch 2>$null) | Out-String).Trim()
+
+$hasNvidia = $false
+try {
+    if ((nvidia-smi -L 2>$null) -match "GPU") { $hasNvidia = $true }
+} catch { }
+
+if ($hasNvidia) {
+    Write-Ok "NVIDIA GPU detected - using CUDA-enabled PyTorch."
+    if ($torchHere -and ($torchCuda -eq "None" -or $torchCuda -eq "missing")) {
+        # Leftover CPU-only torch (e.g. GPU/drivers added later) — remove it
+        # so the requirements install pulls the CUDA build.
+        Write-Warn "Found CPU-only PyTorch - swapping it for the CUDA build."
+        & $venvPython -m pip uninstall -y torch torchaudio
+    }
+} else {
+    $cardNoDriver = $false
+    try {
+        if (Get-CimInstance Win32_VideoController -ErrorAction Stop | Where-Object { $_.Name -match "NVIDIA" }) { $cardNoDriver = $true }
+    } catch { }
+    if ($cardNoDriver) {
+        Write-Warn "NVIDIA card found but no drivers (nvidia-smi shows nothing)."
+        Write-Host  "        Using CPU-only PyTorch - install drivers from https://www.nvidia.com/drivers to use the GPU."
+    } else {
+        Write-Ok "No NVIDIA GPU - using CPU-only PyTorch (skips ~1.5GB of CUDA downloads)."
+    }
+    if ($cuPkgs.Count -gt 0) {
+        # A previous install pulled CUDA wheels onto this GPU-less machine —
+        # remove them to reclaim ~1.5GB.
+        Write-Warn "Removing leftover CUDA packages from a previous install."
+        & $venvPython -m pip uninstall -y torch torchaudio @cuPkgs
+    }
+    if (-not $torchHere -or $cuPkgs.Count -gt 0) {
+        & $venvPython -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio
+        if ($LASTEXITCODE -ne 0) { Write-Host "CPU torch install failed." -ForegroundColor Red; exit 1 }
+    } else {
+        Write-Ok "CPU-only PyTorch already installed."
+    }
+}
+
 & $venvPython -m pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) { Write-Host "Dependency install failed." -ForegroundColor Red; exit 1 }
 Write-Ok "Python dependencies installed."

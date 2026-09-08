@@ -50,7 +50,8 @@ Built as a learning project: it covers offline speech recognition (RealtimeSTT /
 
 One copy-paste per platform — the installer clones TARS (auto-switches to the
 **`dev`** branch), installs **Python 3.12** if needed, system libraries, a
-`.venv`, all Python deps, Chromium, and prompts for your Groq key:
+`.venv`, all Python deps (CUDA PyTorch only when an NVIDIA GPU is detected,
+CPU-only otherwise), Chromium, and prompts for your Groq key:
 
 ```bash
 # Windows (PowerShell):

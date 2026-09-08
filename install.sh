@@ -55,6 +55,14 @@ warn() { printf '  \033[1;33m[!!]\033[0m %s\n' "$*"; }
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 
+# True when an NVIDIA GPU is actually usable: card present AND drivers
+# installed (nvidia-smi lists it). A card without drivers can't run CUDA
+# anyway, so driver presence is the right test — CUDA wheels are only
+# useful when torch.cuda can actually use them.
+has_nvidia_gpu() {
+    command_exists nvidia-smi && nvidia-smi -L 2>/dev/null | grep -qi "GPU"
+}
+
 # Installs uv (fast Python manager) if missing — used both to fetch a
 # standalone Python 3.12 and as a fallback venv creator. Needs no root.
 ensure_uv() {
@@ -292,6 +300,59 @@ PY=".venv/bin/python"
 # ------------------------------------------------------------------
 step "Installing Python dependencies (this may take a few minutes)"
 "$PY" -m pip install --upgrade pip
+
+# ------------------------------------------------------------------
+# PyTorch: full CUDA build only when an NVIDIA GPU is usable, tiny
+# CPU-only build otherwise (saves ~1.5GB of NVIDIA wheels).
+# RealtimeSTT depends on torch, and the default PyPI torch drags in all
+# the nvidia-* CUDA packages. Pre-installing the CPU build FIRST makes pip
+# treat torch/torchaudio as already satisfied, so it skips the CUDA junk.
+# (macOS PyTorch ships no CUDA baggage, so it needs nothing special.)
+# ------------------------------------------------------------------
+step "Setting up PyTorch (GPU or CPU)"
+TORCH_CUDA="$("$PY" -c 'import torch; print(torch.version.cuda)' 2>/dev/null || echo missing)"
+CUDA_PKGS="$("$PY" -m pip list --format=freeze 2>/dev/null | grep -i "^nvidia-" | cut -d= -f1 || true)"
+TORCH_HERE=0
+if "$PY" -m pip show torch >/dev/null 2>&1; then TORCH_HERE=1; fi
+
+if [ "$DETECT_OS" = "Darwin" ]; then
+    ok "macOS detected - standard PyTorch (no CUDA packages exist for Mac)."
+
+elif has_nvidia_gpu; then
+    ok "NVIDIA GPU detected - using CUDA-enabled PyTorch."
+    if [ "$TORCH_HERE" = "1" ]; then
+        case "$TORCH_CUDA" in
+            None|missing)
+                # Leftover CPU-only torch (e.g. GPU/drivers added later) —
+                # remove it so the requirements install pulls the CUDA build.
+                warn "Found CPU-only PyTorch - swapping it for the CUDA build."
+                "$PY" -m pip uninstall -y torch torchaudio \
+                    || warn "Could not remove old PyTorch - continuing anyway." ;;
+        esac
+    fi
+
+else
+    if command_exists lspci && lspci 2>/dev/null | grep -qi nvidia; then
+        warn "NVIDIA card found but no drivers (nvidia-smi shows nothing)."
+        warn "Using CPU-only PyTorch - install drivers from https://www.nvidia.com/drivers to use the GPU."
+    else
+        ok "No NVIDIA GPU - using CPU-only PyTorch (skips ~1.5GB of CUDA downloads)."
+    fi
+    if [ -n "$CUDA_PKGS" ]; then
+        # A previous install pulled CUDA wheels onto this GPU-less machine —
+        # remove them to reclaim ~1.5GB.
+        warn "Removing leftover CUDA packages from a previous install."
+        # shellcheck disable=SC2086
+        "$PY" -m pip uninstall -y torch torchaudio $CUDA_PKGS \
+            || warn "Could not remove old CUDA packages - continuing anyway."
+    fi
+    if [ "$TORCH_HERE" = "0" ] || [ -n "$CUDA_PKGS" ]; then
+        "$PY" -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio
+    else
+        ok "CPU-only PyTorch already installed."
+    fi
+fi
+
 "$PY" -m pip install -r requirements.txt
 ok "Python dependencies installed."
 
