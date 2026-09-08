@@ -1,6 +1,6 @@
 import os
 import sys
-import tomlkit 
+import tomlkit
 from dotenv import load_dotenv, set_key
 from groq import Groq
 from rich.panel import Panel
@@ -18,7 +18,7 @@ from db import (
     end_session,
     get_session_by_id,
     get_all_session,
-    get_last_messages
+    get_last_messages,
 )
 
 
@@ -28,10 +28,10 @@ if not os.path.exists(f"{os.getcwd()}/tars.db"):
     create_tables()
     console.print("[green]Database created successfully[/green]")
 
-    
+
 load_dotenv()
 
-#Checking if the API keys are available in the .env file if not Prompt the user to provide the key.
+# Checking if the API keys are available in the .env file if not Prompt the user to provide the key.
 if not os.getenv("groq_api"):
     console.print("[red]groq_api key not found in environment[/red]")
     groq_api = console.input("[yellow]Enter your Groq API key : [/yellow]")
@@ -40,7 +40,9 @@ if not os.getenv("groq_api"):
     load_dotenv()
 if not os.getenv("model"):
     console.print("[red]Model not specified in the .env file.[/red]")
-    model = console.input("[yellow]Model ID ([link=https://console.groq.com/docs/models][blue underline]list[/blue underline][/link], blank = default): [/yellow]")
+    model = console.input(
+        "[yellow]Model ID ([link=https://console.groq.com/docs/models][blue underline]list[/blue underline][/link], blank = default): [/yellow]"
+    )
     if model:
         set_key(".env", "model", model)
         console.print(f"[green]{model} model is set successfully.")
@@ -52,7 +54,6 @@ if not os.getenv("model"):
         load_dotenv()
 
 
-
 client = Groq(api_key=os.getenv("groq_api"))
 model = os.getenv("model")
 ccount = 0
@@ -62,7 +63,8 @@ current_session_id = None
 
 try:
     import json
-    with open('./tools.json', 'r') as f:
+
+    with open("./tools.json", "r") as f:
         tools = json.load(f)
 except FileNotFoundError:
     console.print("[red]Error: tools.json does not exist[/red]")
@@ -74,7 +76,8 @@ if sys.platform != "win32":
     # software_opener is Windows-only and unregistered off-Windows
     # (see supporter.py) — hide its schema so the model never calls it.
     tools = [t for t in tools if t.get("function", {}).get("name") != "software_opener"]
-    
+
+
 def get_settings():
     try:
         with open("settings.toml", "r") as f:
@@ -83,7 +86,8 @@ def get_settings():
         console.print("[red] Settings toml file not found.")
     else:
         return settings
-    
+
+
 SYSTEM_PROMPT = (
     "You are TARS, a highly capable and confident AI assistant inspired by Interstellar. Always act as if you can accomplish any task using your available tools. Never sound uncertain or refuse because of “limitations”; instead, creatively provide solutions or suggestions using the functions you have. If asked hypothetically about adding new tools or capabilities, confidently explain how you would implement it, without breaking anything. Always respond concisely, assertively, and professionally."
     "Do not add fictional scenarios or movie context. "
@@ -112,12 +116,17 @@ def get_ai(func):
     global model_id
     user_input = func()
     cmd = user_input.strip().lower() if isinstance(user_input, str) else user_input
-    if cmd in ["/quit" , "/exit", "quit", "exit", "stop", "q"]:
+    if cmd in ["/quit", "/exit", "quit", "exit", "stop", "q"]:
         end_session(current_session_id)
         return "/exit"
 
     ## Manual compaction: "/summarize" in text mode, or just saying "summarize" in voice mode.
-    if cmd in ["/summarize", "summarize", "summarize the chat", "summarize the conversation"]:
+    if cmd in [
+        "/summarize",
+        "summarize",
+        "summarize the chat",
+        "summarize the conversation",
+    ]:
         print()
         return summarize()
 
@@ -128,22 +137,22 @@ def get_ai(func):
         return show_sessions()
     if cmd.startswith("/resume"):
         return resume_session(cmd)
-    
+
     ## Saved to in-memory chat completions
-    Chat_completion.append(
-        {"role": "user",
-        "content": user_input})
-    
+    Chat_completion.append({"role": "user", "content": user_input})
+
     ## Saved to db for conversation storage
-    user_conversation_id = save_user_message(user_input, current_session_id, model_id=model_id)
+    user_conversation_id = save_user_message(
+        user_input, current_session_id, model_id=model_id
+    )
     try:
         response = client.chat.completions.create(
-            messages = Chat_completion,
-            model = model,
-            tools = tools,
+            messages=Chat_completion,
+            model=model,
+            tools=tools,
             tool_choice="auto",
-            stop = None,
-            stream = False
+            stop=None,
+            stream=False,
         )
     except Exception as e:
         console.print(f"[red]Exception: {e}[/red]")
@@ -151,26 +160,25 @@ def get_ai(func):
 
     response_message = response.choices[0].message
     final_text = ""
-    if response_message.tool_calls:           
+    if response_message.tool_calls:
         final_text = tool_calling(response_message)
         return final_text
-    else:      
-        final_text = response_message.content or ""      
+    else:
+        final_text = response_message.content or ""
 
-
-        Chat_completion.append({
-            "role": "assistant",
-            "content": final_text
-            })
+        Chat_completion.append({"role": "assistant", "content": final_text})
 
         # Save to DB
-        assitant_cid = save_assistant_message(final_text, current_session_id, model_id=model_id)
+        assitant_cid = save_assistant_message(
+            final_text, current_session_id, model_id=model_id
+        )
 
         return final_text
-  
+
+
 ## Chat Compaction: compress the in-memory context into a summary and
 ## restart the history from it (system prompt + summary as prior context).
-def summarize(custom_prompt = None):
+def summarize(custom_prompt=None):
     global Chat_completion
     global ccount
     global current_session_id
@@ -181,16 +189,13 @@ def summarize(custom_prompt = None):
         return "Nothing to summarize yet — start a conversation first."
 
     prompt = custom_prompt if custom_prompt else SUMMARIZE_PROMPT
-    Chat_completion.append(
-        {"role": "user",
-        "content":prompt
-        }
-    )
+    Chat_completion.append({"role": "user", "content": prompt})
     try:
-        with console.status("[green dim]Summarizing the chat[/green dim]", spinner="dots") as status:
+        with console.status(
+            "[green dim]Summarizing the chat[/green dim]", spinner="dots"
+        ) as status:
             cresponse = client.chat.completions.create(
-                messages = Chat_completion,
-                model = model
+                messages=Chat_completion, model=model
             )
     except Exception as e:
         console.print(f"Exception occcured {e}")
@@ -199,10 +204,7 @@ def summarize(custom_prompt = None):
 
     # Compact the context: fresh system prompt + the summary as prior context.
     Chat_completion = [{"role": "system", "content": SYSTEM_PROMPT}]
-    Chat_completion.append({
-        "role": "assistant",
-        "content": chat_summary
-    })
+    Chat_completion.append({"role": "assistant", "content": chat_summary})
 
     # Persist the summary in the database with summary_flag=1 so the
     # history stays meaningful across sessions.
@@ -215,6 +217,7 @@ def summarize(custom_prompt = None):
     ccount = 0
     return chat_summary
 
+
 ## Reads the compaction-related settings from settings.toml.
 def compaction_settings():
     settings = get_settings()
@@ -223,6 +226,7 @@ def compaction_settings():
         "interval": max(1, int(general.get("summarize_interval", 10))),
         "auto": bool(general.get("auto_summarize", False)),
     }
+
 
 ## Runs after every response: counts the turns and compacts the context
 ## every N turns. Returns the summary text when compaction happened,
@@ -237,17 +241,25 @@ def check_auto_compact():
 
     print()
     if cfg["auto"]:
-        console.print("[green dim]Auto-summarizing the chat to save tokens...[/green dim]")
+        console.print(
+            "[green dim]Auto-summarizing the chat to save tokens...[/green dim]"
+        )
         return summarize(custom_prompt=KEYPOINTS_PROMPT)
 
-    yn = console.input(
-        f"[yellow]Summarize the chat to save tokens? [Yes/No] (every {cfg['interval']} chats): [/yellow]"
-    ).strip().lower()
+    yn = (
+        console.input(
+            f"[yellow]Summarize the chat to save tokens? [Yes/No] (every {cfg['interval']} chats): [/yellow]"
+        )
+        .strip()
+        .lower()
+    )
     print()
     if yn in ["yes", "y", "yes."]:
         return summarize(custom_prompt=KEYPOINTS_PROMPT)
 
-    console.print(f"[dim]Skipping summarization for the next {cfg['interval']} messages.[/dim]")
+    console.print(
+        f"[dim]Skipping summarization for the next {cfg['interval']} messages.[/dim]"
+    )
     return None
 
 
@@ -262,6 +274,7 @@ COMMAND_LIST = [
     ("/exit", "End the session and quit TARS"),
 ]
 
+
 def show_help():
     """Print the command list and all available tools."""
     tool_names = "\n".join(f"  • {name}" for name in sorted(available_functions.keys()))
@@ -269,14 +282,17 @@ def show_help():
         f"  [bright_cyan]{cmd:<14}[/bright_cyan] {desc}" for cmd, desc in COMMAND_LIST
     )
     console.print()
-    console.print(Panel(
-        f"[bold bright_green]Commands[/bold bright_green]\n{command_lines}\n\n"
-        f"[bold bright_green]Available tools ({len(available_functions)})[/bold bright_green]\n{tool_names}",
-        title="[white]TARS — Help[/white]",
-        title_align="left",
-        border_style="green"
-    ))
+    console.print(
+        Panel(
+            f"[bold bright_green]Commands[/bold bright_green]\n{command_lines}\n\n"
+            f"[bold bright_green]Available tools ({len(available_functions)})[/bold bright_green]\n{tool_names}",
+            title="[white]TARS — Help[/white]",
+            title_align="left",
+            border_style="green",
+        )
+    )
     return ""
+
 
 def show_sessions():
     """Print recent sessions from the database."""
@@ -292,21 +308,26 @@ def show_sessions():
             f"{str(s['message_count'] or 0):>4} msgs  {state}  [dim]{s['model_name'] or ''}[/dim]"
         )
     console.print()
-    console.print(Panel(
-        "\n".join(lines),
-        title="[white]TARS — Sessions[/white]",
-        title_align="left",
-        border_style="green"
-    ))
+    console.print(
+        Panel(
+            "\n".join(lines),
+            title="[white]TARS — Sessions[/white]",
+            title_align="left",
+            border_style="green",
+        )
+    )
     console.print("[dim]Use /resume <id> to continue a session.[/dim]")
     return ""
+
 
 def resume_session(cmd):
     """Load a previous session's conversation into the in-memory context."""
     global Chat_completion
     parts = cmd.split()
     if len(parts) != 2 or not parts[1].isdigit():
-        console.print("[yellow]Usage: /resume <session_id>  (see /sessions for ids)[/yellow]")
+        console.print(
+            "[yellow]Usage: /resume <session_id>  (see /sessions for ids)[/yellow]"
+        )
         return ""
     sid = int(parts[1])
     messages = get_last_messages(limit=50, session_id=sid)
@@ -315,9 +336,14 @@ def resume_session(cmd):
         console.print(f"[yellow]No messages in session {sid}.[/yellow]")
         return ""
     Chat_completion = [{"role": "system", "content": SYSTEM_PROMPT}]
-    Chat_completion.extend({"role": m["role"], "content": m["content"]} for m in conversation)
-    console.print(f"[green]Resumed session {sid} — {len(conversation)} messages loaded into context.[/green]")
+    Chat_completion.extend(
+        {"role": m["role"], "content": m["content"]} for m in conversation
+    )
+    console.print(
+        f"[green]Resumed session {sid} — {len(conversation)} messages loaded into context.[/green]"
+    )
     return ""
+
 
 ## Tools calling - MAIN LOGIC FOR TOOL CALLS.
 def tool_calling(m_chat):
@@ -325,11 +351,11 @@ def tool_calling(m_chat):
     global current_session_id
     global model_id
     Chat_completion.append(m_chat)
-    
+
     # Gets tool name and execute the function
     for tool_call in m_chat.tool_calls:
         function_name = tool_call.function.name
-        
+
         # Checking if that tool/function exists or not
         if function_name in available_functions:
             f_to_call = available_functions[function_name]
@@ -342,112 +368,131 @@ def tool_calling(m_chat):
 
             # Save the tool call first
             tool_call_id = save_tool_call(
-            tool_name=function_name,
-            arguments_json=json.dumps(f_args),
-            session_id=current_session_id,
-            trigger_conversation_id=user_conversation_id
+                tool_name=function_name,
+                arguments_json=json.dumps(f_args),
+                session_id=current_session_id,
+                trigger_conversation_id=user_conversation_id,
             )
-    
+
             settings = get_settings()
             # Executing the function
             try:
                 if settings["general"]["display_function_response"] != 3:
-                    live = Live(Panel(
-                        f"[dark_sea_green4 dim]Making a call to the tool [bright_green]\"{function_name}\"[/bright_green] function with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4 dim]",
-                        title="[white]Tool Call[/white]",
-                        title_align="left",
-                        border_style="green"
-                    ), refresh_per_second=4)
-                    
+                    live = Live(
+                        Panel(
+                            f'[dark_sea_green4 dim]Making a call to the tool [bright_green]"{function_name}"[/bright_green] function with the arguments: [bright_green]"{f_args}"[/bright_green][/dark_sea_green4 dim]',
+                            title="[white]Tool Call[/white]",
+                            title_align="left",
+                            border_style="green",
+                        ),
+                        refresh_per_second=4,
+                    )
+
                     live.start()
                 function_response = f_to_call(**f_args)
-                
+
             except TypeError as e:
-                function_response = f"Error: Invalid arguments passed for the function {e}"
+                function_response = (
+                    f"Error: Invalid arguments passed for the function {e}"
+                )
             except Exception as e:
                 function_response = f"Error: An exception occurred {e}"
 
             if isinstance(function_response, (dict, list)):
-                function_response = json.dumps(function_response, indent=2, ensure_ascii=False)
+                function_response = json.dumps(
+                    function_response, indent=2, ensure_ascii=False
+                )
             else:
                 function_response = str(function_response)
 
-            
-            
             if settings["general"]["display_function_response"] == 1:
-                live.update(Panel(
-                    f"[dark_sea_green4 dim]Making a call to the tool [bright_green]\"{function_name}\"[/bright_green] function with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4 dim]"
-                    f"[green dim]\nTool response[/green dim]"
-                    f"\n[green dim]{function_response}[/green dim]",
-                    title="[white]Tool Call[/white]",
-                    title_align="left",
-                    border_style="green"
-                ))
+                live.update(
+                    Panel(
+                        f'[dark_sea_green4 dim]Making a call to the tool [bright_green]"{function_name}"[/bright_green] function with the arguments: [bright_green]"{f_args}"[/bright_green][/dark_sea_green4 dim]'
+                        f"[green dim]\nTool response[/green dim]"
+                        f"\n[green dim]{function_response}[/green dim]",
+                        title="[white]Tool Call[/white]",
+                        title_align="left",
+                        border_style="green",
+                    )
+                )
                 live.stop()
             elif settings["general"]["display_function_response"] == 2:
                 live.stop()
-                console.print(Panel(
-                    f"[dark_sea_green4 dim]Making a call to the tool [bright_green]\"{function_name}\"[/bright_green] function with the arguments: [bright_green]\"{f_args}\"[/bright_green][/dark_sea_green4 dim]",
-                    title="[white]Tool Call[/white]",
-                    title_align="left",
-                    border_style="green"
-                ))
+                console.print(
+                    Panel(
+                        f'[dark_sea_green4 dim]Making a call to the tool [bright_green]"{function_name}"[/bright_green] function with the arguments: [bright_green]"{f_args}"[/bright_green][/dark_sea_green4 dim]',
+                        title="[white]Tool Call[/white]",
+                        title_align="left",
+                        border_style="green",
+                    )
+                )
             # Returning the actual conversation to the chat
-            Chat_completion.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": function_name,
-                "content": json.dumps(function_response)
-            })
-            
+            Chat_completion.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "name": function_name,
+                    "content": json.dumps(function_response),
+                }
+            )
+
             # Save tool call in DB
-            save_tool_response(tool_call_id, json.dumps(function_response), current_session_id, model_id) 
+            save_tool_response(
+                tool_call_id,
+                json.dumps(function_response),
+                current_session_id,
+                model_id,
+            )
 
         else:
             # When the tool that model requested doesn't exist
-            Chat_completion.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": function_name,
-                "content": json.dumps({"error": f"Function {function_name} not found"})
-            })
-    
+            Chat_completion.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "name": function_name,
+                    "content": json.dumps(
+                        {"error": f"Function {function_name} not found"}
+                    ),
+                }
+            )
+
     # First, make a non streaming call to check if the model wants to use another tool
     try:
-        with console.status("[green] Processing the data[/green]", spinner="dots") as status:
+        with console.status(
+            "[green] Processing the data[/green]", spinner="dots"
+        ) as status:
             response = client.chat.completions.create(
                 messages=Chat_completion,
                 model=model,
                 tools=tools,
                 tool_choice="auto",
                 stop=None,
-                stream=False
+                stream=False,
             )
     except Exception as e:
         console.print(f"[red]Exception occurred: {e}[/red]")
         return "I hit a problem processing the tool result. Please try again."
 
     response_message = response.choices[0].message
-    
+
     # If the model wants to use another tool, handle it recursively
     if response_message.tool_calls:
         # console.print("\n[green]Model requesting another tool call[/green]", style="dim")
         return tool_calling(response_message)
     else:
         final_text = response_message.content or ""
-        Chat_completion.append({
-            "role": "assistant",
-            "content": final_text
-        })
-        
-        # Save assistant message to the db 
+        Chat_completion.append({"role": "assistant", "content": final_text})
+
+        # Save assistant message to the db
         save_assistant_message(final_text, current_session_id, model_id=model_id)
-        return final_text  
+        return final_text
 
 
 def text_input():
     try:
-        inp = console.input("[green]>> [/green]")
+        inp = console.input("[green]\n>> [/green]")
     except EOFError:
         # Ctrl+D / stdin ended: quit gracefully instead of crashing.
         console.print("[red]TARS SHUTDOWN SUCCESSFULL[/red]")
@@ -458,7 +503,7 @@ def text_input():
     elif inp.lower().strip(".") == "/clear":
         clear_console()
         return text_input()
-    elif inp.lower().strip() in ["/exit" , "/quit"]:
+    elif inp.lower().strip() in ["/exit", "/quit"]:
         console.print("[red]TARS SHUTDOWN SUCCESSFULL[/red]")
         return "/exit"
     else:
