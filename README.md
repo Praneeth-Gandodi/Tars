@@ -38,7 +38,32 @@ Built as a learning project: it covers offline speech recognition (RealtimeSTT /
 - Python 3.12.x
 - A free Groq API key from <https://console.groq.com/keys>
 
-## Local setup
+## Install
+
+> **No Docker needed.** TARS installs natively on Windows, macOS, Linux and WSL2.
+> The bundled Docker image is too large to share; the native setup below runs the
+> same code everywhere and downloads only the deps + one speech model.
+>
+> **Full walkthrough:** see [`INSTALLATION.md`](INSTALLATION.md).
+
+### One-command installer
+
+```bash
+# Windows (PowerShell):
+git clone https://github.com/Praneeth-Gandodi/Tars.git && cd Tars
+.\install.ps1
+
+# macOS / Linux / WSL2:
+git clone https://github.com/Praneeth-Gandodi/Tars.git && cd Tars
+chmod +x install.sh && ./install.sh
+```
+
+Each installer detects your OS, installs system libraries (ffmpeg, audio, browser
+deps), creates a `.venv`, installs Python deps, sets up the Chromium browser,
+prompts for your Groq API key, and pre-warms the speech model. Idempotent — rerun
+any time to repair or upgrade.
+
+### Manual setup
 
 ```bash
 # 1. clone (or copy) the project
