@@ -9,8 +9,13 @@
 #      curl -fsSL https://raw.githubusercontent.com/Praneeth-Gandodi/Tars/dev/install.sh | bash
 #
 #  The script does EVERYTHING for you:
-#    - Installs Python 3.12/3.13 itself if it isn't installed yet
-#    - Installs the system libraries TARS needs (ffmpeg, audio, browser deps)
+#    - Installs Python 3.12 itself if it isn't installed yet (Homebrew on
+#      macOS; apt + deadsnakes PPA if needed on Debian/Ubuntu; dnf/pacman
+#      elsewhere; standalone via uv as a last resort). Too-new system
+#      Pythons (e.g. 3.14) are avoided: audio deps are validated on 3.12/3.13.
+#    - Installs the venv package matching its Python (fixes "ensurepip is
+#      not available" on Debian/Ubuntu) + system libraries (ffmpeg, audio,
+#      browser deps)
 #    - Clones the project (dev branch) into ./Tars and keeps you on 'dev'
 #    - Creates a virtual environment + installs all Python dependencies
 #    - Installs the Playwright / Chromium browser (browser automation)
@@ -49,7 +54,29 @@ ok()   { printf '  \033[1;32m[OK]\033[0m %s\n' "$*"; }
 warn() { printf '  \033[1;33m[!!]\033[0m %s\n' "$*"; }
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
-python_ok() { "$1" -c 'import sys; sys.exit(0 if sys.version_info >= (3,12) else 1)' 2>/dev/null; }
+
+# Installs uv (fast Python manager) if missing — used both to fetch a
+# standalone Python 3.12 and as a fallback venv creator. Needs no root.
+ensure_uv() {
+    command_exists uv && return 0
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$PATH"
+    command_exists uv
+}
+
+# Installs Homebrew if missing (macOS) and puts it on this session's PATH
+# (handles both Apple Silicon and Intel locations).
+ensure_brew() {
+    command_exists brew && return 0
+    echo "  Installing Homebrew (needed for Python + audio libraries)..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if [ -x /opt/homebrew/bin/brew ]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [ -x /usr/local/bin/brew ]; then
+        eval "$(/usr/local/bin/brew shellenv)"
+    fi
+    command_exists brew
+}
 
 echo ""
 echo "====================================================================="
@@ -88,78 +115,104 @@ else
 fi
 
 # ------------------------------------------------------------------
-# 2. Make sure Python 3.12/3.13 exists — install it if it doesn't.
+# 2. Make sure a TARS-compatible Python exists — install 3.12 if not.
+#    TARS targets 3.12/3.13 (audio deps like PyAudio, RealtimeSTT and
+#    piper-tts are validated there), so a newer system Python (e.g. 3.14)
+#    is only ever used as a last resort.
 # ------------------------------------------------------------------
 step "Ensuring Python 3.12+"
 PYTHON=""
-for c in python3 python3.12 python3.13; do
-    if command_exists "$c" && python_ok "$c"; then
-        PYTHON="$c"
-        break
+PYVER=""
+NEWER_PY=""
+for c in python3.12 python3.13 python3; do
+    if command_exists "$c"; then
+        ver="$("$c" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
+        case "$ver" in
+            3.12|3.13) PYTHON="$c"; PYVER="$ver"; break ;;
+            # Newer than 3.13 (e.g. 3.14): remembered as a fallback only.
+            3.1[4-9]|3.[2-9][0-9]) [ -z "$NEWER_PY" ] && NEWER_PY="$c" ;;
+        esac
     fi
 done
 
 if [ -z "$PYTHON" ]; then
-    warn "No usable Python 3.12/3.13 found - installing one for you."
+    warn "No Python 3.12/3.13 found - installing Python 3.12 for you."
     if [ "$DETECT_OS" = "Darwin" ]; then
         # macOS -> Homebrew (installed first if needed)
-        if ! command_exists brew; then
-            echo "  Installing Homebrew (needed for Python + audio libraries)..."
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        if ensure_brew && brew install python@3.12; then
+            PYTHON="$(brew --prefix)/bin/python3.12"
         fi
-        # Put brew's bin dir on PATH for this session (Apple Silicon vs Intel).
-        if [ -x /opt/homebrew/bin/brew ]; then
-            eval "$(/opt/homebrew/bin/brew shellenv)"
-        elif [ -x /usr/local/bin/brew ]; then
-            eval "$(/usr/local/bin/brew shellenv)"
-        elif command_exists brew; then
-            eval "$(brew shellenv)"
-        else
-            warn "Homebrew could not be set up - install it from https://brew.sh and re-run."
-            exit 1
-        fi
-        brew install python@3.12
-        PYTHON="$(brew --prefix)/bin/python3.12"
 
     elif command_exists apt-get; then
         # Debian / Ubuntu / WSL2-Ubuntu
         sudo apt-get update
-        if ! sudo apt-get install -y python3.12 python3.12-venv; then
-            # Older Ubuntu/Debian don't ship 3.12 -> use the deadsnakes PPA.
-            warn "python3.12 isn't in this distro's repos - adding the deadsnakes PPA."
+        if sudo apt-get install -y python3.12 python3.12-venv; then
+            PYTHON=python3.12
+        elif grep -qi '^ID=ubuntu' /etc/os-release 2>/dev/null; then
+            # Ubuntu release without 3.12 in its repos -> deadsnakes PPA
+            # (Ubuntu-only; Debian goes straight to the uv fallback below).
+            warn "python3.12 isn't in this Ubuntu release's repos - adding the deadsnakes PPA."
             command_exists add-apt-repository || sudo apt-get install -y software-properties-common
-            sudo add-apt-repository -y ppa:deadsnakes/ppa
-            sudo apt-get update
-            sudo apt-get install -y python3.12 python3.12-venv
+            if sudo add-apt-repository -y ppa:deadsnakes/ppa \
+                && sudo apt-get update \
+                && sudo apt-get install -y python3.12 python3.12-venv; then
+                PYTHON=python3.12
+            fi
+        else
+            warn "python3.12 isn't in this distro's repos - will try a standalone Python via uv."
         fi
-        PYTHON=python3.12
 
     elif command_exists dnf; then
         # Fedora / RHEL
-        sudo dnf install -y python3.12 python3.12-pip || sudo dnf install -y python3.13 python3.13-pip
-        PYTHON="$(command -v python3.12 || command -v python3.13 || echo python3)"
+        if sudo dnf install -y python3.12; then
+            PYTHON=python3.12
+        elif sudo dnf install -y python3.13; then
+            PYTHON=python3.13
+        fi
 
     elif command_exists pacman; then
-        # Arch / Manjaro
-        sudo pacman -Sy --noconfirm python
-        PYTHON=python3
+        # Arch is rolling-release: repos only carry the newest Python, so
+        # grab a standalone 3.12 via uv; fall back to the repo Python below.
+        if ensure_uv && uv python install 3.12; then
+            PYTHON="$(uv python find 3.12)" || PYTHON=""
+        elif sudo pacman -Sy --noconfirm python; then
+            NEWER_PY=python3
+        fi
 
     else
-        # Universal fallback: uv (installs standalone Pythons, no root needed).
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        export PATH="$HOME/.local/bin:$PATH"
-        uv python install 3.12
-        PYTHON="$(uv python find 3.12)"
+        # Unknown distro: standalone 3.12 via uv, no root needed.
+        if ensure_uv && uv python install 3.12; then
+            PYTHON="$(uv python find 3.12)" || PYTHON=""
+        fi
+    fi
+
+    # Last resort on Linux: standalone 3.12 via uv (covers failed repo installs).
+    if [ -z "$PYTHON" ] && [ "$DETECT_OS" != "Darwin" ]; then
+        warn "Package-manager install failed - trying standalone Python 3.12 via uv."
+        if ensure_uv && uv python install 3.12; then
+            PYTHON="$(uv python find 3.12)" || PYTHON=""
+        fi
     fi
 fi
 
-if [ -n "$PYTHON" ] && python_ok "$PYTHON"; then
-    ok "Using Python: $PYTHON ($("$PYTHON" --version 2>&1))"
-else
+if [ -z "$PYTHON" ] && [ -n "$NEWER_PY" ]; then
+    PYTHON="$NEWER_PY"
+    warn "Could not install Python 3.12 - falling back to your system Python."
+fi
+
+if [ -z "$PYTHON" ]; then
     warn "Could not install Python 3.12+ automatically."
     warn "Install it manually from https://www.python.org/downloads/ and re-run."
     exit 1
 fi
+
+PYVER="$("$PYTHON" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
+case "$PYVER" in
+    3.12|3.13)
+        ok "Using Python: $PYTHON ($("$PYTHON" --version 2>&1))" ;;
+    *)
+        warn "Using Python $PYVER ($PYTHON) - TARS targets 3.12/3.13, so some audio packages may fail to install." ;;
+esac
 
 # ------------------------------------------------------------------
 # 3. Install system libraries (best-effort; requires sudo on Linux).
@@ -177,6 +230,13 @@ if [ "$DO_SYSTEM" -eq 1 ]; then
     elif command_exists apt-get; then
         # Debian / Ubuntu / WSL2-Ubuntu
         sudo apt-get update
+        # Debian/Ubuntu split venv support per interpreter version: install the
+        # venv package matching the Python we are about to use, otherwise
+        # `python -m venv` fails with "ensurepip is not available".
+        if [ -n "$PYVER" ]; then
+            sudo apt-get install -y "python${PYVER}-venv" || \
+                warn "Could not install python${PYVER}-venv - venv creation may fail."
+        fi
         sudo apt-get install -y --no-install-recommends \
             ffmpeg \
             git \
@@ -209,8 +269,17 @@ fi
 # ------------------------------------------------------------------
 step "Creating a virtual environment"
 if [ ! -d "./.venv" ]; then
-    "$PYTHON" -m venv .venv
-    ok "Virtual environment created at .venv"
+    if "$PYTHON" -m venv .venv 2>/dev/null; then
+        ok "Virtual environment created at .venv"
+    elif ensure_uv && uv venv --python "$PYTHON" .venv; then
+        ok "Virtual environment created at .venv (via uv fallback)"
+    else
+        warn "Could not create the virtual environment."
+        echo "  On Debian/Ubuntu this usually means a missing venv package:"
+        echo "      sudo apt install -y python${PYVER}-venv"
+        echo "  Then re-run this script."
+        exit 1
+    fi
 else
     ok "Virtual environment already exists."
 fi
@@ -249,7 +318,13 @@ fi
 
 if grep -q "your_groq_api_key_here" .env; then
     printf '  Enter your free Groq API key (https://console.groq.com/keys): '
-    read -r KEY
+    if [ -t 0 ]; then
+        read -r KEY || KEY=""
+    else
+        # Running via `curl ... | bash`: stdin is the download pipe, so read
+        # the key from the terminal instead.
+        read -r KEY </dev/tty || KEY=""
+    fi
     if [ -n "$KEY" ] && [ "$KEY" != "your_groq_api_key_here" ]; then
         sed -i.bak "s/your_groq_api_key_here/$KEY/" .env && rm -f .env.bak
         ok "API key saved to .env"

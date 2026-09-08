@@ -47,8 +47,13 @@ laptop, desktop and phone already has them.
 Paste **one line** into your terminal. That's it — the installer:
 
 1. Clones TARS (auto-switches to the **`dev` branch**) into a `Tars` folder.
-2. **Installs Python 3.12/3.13 itself** if it isn't installed yet.
-3. Installs the **system libraries** TARS needs (ffmpeg, audio, browser deps).
+2. **Installs Python 3.12 itself** if it isn't installed yet — Homebrew on macOS,
+   `apt` (+deadsnakes PPA when needed) on Debian/Ubuntu, `dnf`/`pacman`
+   elsewhere, standalone via `uv` as a last resort. Too-new system Pythons
+   (e.g. 3.14) are avoided, since the audio deps are validated on 3.12/3.13.
+3. Installs the **system libraries** TARS needs (ffmpeg, audio, browser deps) —
+   including the venv package matching its Python, so `python -m venv` never
+   fails with "ensurepip is not available".
 4. Creates an isolated Python **virtual environment** (`.venv`).
 5. Installs **all Python dependencies**.
 6. Installs the **Chromium browser** for the browser-automation tools.
@@ -274,6 +279,7 @@ automatically the first time you enter a voice mode. Job done.
 | Symptom | Fix |
 |---|---|
 | `python` is not recognized (Windows, manual setup) | The installers install Python automatically. For manual setup: install Python 3.12 with **Add to PATH** ticked, open a **new** terminal. |
+| `ensurepip is not available` / venv creation fails (Debian/Ubuntu) | Handled automatically — the installer puts in the venv package matching its Python (`python3.X-venv`) and retries via `uv` if needed. Manual setup: `sudo apt install -y python3.X-venv` (X = your Python's minor version). |
 | pip errors about `markrender` | It's installed from GitHub — you need git + network: `pip install -r requirements.txt` again. |
 | `AppOpener` / apps tool fails on Linux | By design — the app-opener tool is **Windows-only**. Other tools are unaffected. |
 | Voice picks up nothing | Check `.env` key; grant mic permission; ensure a default mic set. On Linux check `pactl list sources`. |
