@@ -20,10 +20,14 @@ ENV PYTHONUNBUFFERED=1 \
 #                                    (audio works in WSL2 via --mount of the
 #                                    PulseServer socket; see WSL_DOCKER_GUIDE.md)
 #   pulseaudio-utils -> pactl, for in-container audio sanity checks
+#   build-essential + portaudio19-dev -> PyAudio (RealtimeSTT dep) compiles
+#                                        its C extension from source
 #   ffmpeg          -> RealtimeSTT / audio conversions
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg \
         git \
+        build-essential \
+        portaudio19-dev \
         libgomp1 \
         libportaudio2 \
         libpulse0 \
@@ -31,7 +35,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         pulseaudio-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Python dependencies (markrender comes from git, needs network at build time)
+# Python dependencies (markrender comes from git, needs network at build time).
+# Install CPU-only PyTorch FIRST — RealtimeSTT requires torch for Silero VAD,
+# but the default PyPI torch wheel drags in ~3 GB of CUDA libs TARS never uses.
+RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
