@@ -1,5 +1,20 @@
 # Installing & Running TARS — Every Device, No Docker
 
+> ## ⚠️ Use the `dev` branch
+>
+> The installers, `INSTALLATION.md` and the cross-platform setup live on the
+> **`dev`** branch. The default GitHub branch (`main`) does **not** have them,
+> so **switch to `dev` right after cloning** before following any step below:
+>
+> ```bash
+> git clone https://github.com/Praneeth-Gandodi/Tars.git
+> cd Tars
+> git checkout dev        # ← do this first
+> ```
+>
+> (If you download the **zip** instead, pick the `dev` branch in the GitHub
+> branch dropdown before downloading.)
+
 TARS is a **terminal-based voice AI assistant** (Groq-powered, with 30+ built-in
 tools). The bundled Docker image is too large to share, so this guide covers the
 **native install** — a plain Python setup that runs on **Windows, macOS, Linux

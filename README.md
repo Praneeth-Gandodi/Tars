@@ -45,16 +45,21 @@ Built as a learning project: it covers offline speech recognition (RealtimeSTT /
 > same code everywhere and downloads only the deps + one speech model.
 >
 > **Full walkthrough:** see [`INSTALLATION.md`](INSTALLATION.md).
+>
+> > **⚠️ Use the `dev` branch.** The installers and this guide live on **`dev`**,
+> > not the default `main` branch. `git checkout dev` right after cloning.
 
 ### One-command installer
 
 ```bash
 # Windows (PowerShell):
 git clone https://github.com/Praneeth-Gandodi/Tars.git && cd Tars
+git checkout dev                  # ← switch to dev first
 .\install.ps1
 
 # macOS / Linux / WSL2:
 git clone https://github.com/Praneeth-Gandodi/Tars.git && cd Tars
+git checkout dev                  # ← switch to dev first
 chmod +x install.sh && ./install.sh
 ```
 
@@ -69,6 +74,7 @@ any time to repair or upgrade.
 # 1. clone (or copy) the project
 git clone https://github.com/Praneeth-Gandodi/Tars.git
 cd Tars
+git checkout dev                  # ← use the dev branch (has the install files)
 
 # 2. virtual environment
 python -m venv .venv
