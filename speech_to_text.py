@@ -5,6 +5,7 @@ from rich.live import Live
 from rich.text import Text
 import sys
 import logging
+import threading
 
 
 logging.getLogger("RealtimeSTT").setLevel(logging.CRITICAL)
@@ -16,6 +17,10 @@ logging.getLogger("webrtcvad").setLevel(logging.CRITICAL)
 console = Console()
 recorder = None
 live_display = None
+
+## Thread-safe flag raised the moment the VAD detects the user starts
+## speaking. TTS playback polls this so voice can interrupt TARS talking.
+interrupt_event = threading.Event()
 
 def initialize_recorder():
     """Initialize the recorder once"""
@@ -33,7 +38,7 @@ def initialize_recorder():
                     silero_sensitivity=0.5,
                     enable_realtime_transcription=True,
                     on_realtime_transcription_update=on_partial,
-                    on_recording_start=lambda: None,
+                    on_recording_start=lambda: interrupt_event.set(),
                     spinner=False,
                     level=logging.CRITICAL, 
                 )

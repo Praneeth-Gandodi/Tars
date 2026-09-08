@@ -3,7 +3,6 @@ import sys
 import tomlkit 
 from dotenv import load_dotenv, set_key
 from groq import Groq
-from rich.console import Console
 from rich.panel import Panel
 from rich.live import Live
 from supporter import *
@@ -13,10 +12,13 @@ from db import (
     save_assistant_message,
     save_tool_call,
     save_tool_response,
+    save_summary,
     get_or_create_model,
     create_new_session,
     end_session,
-    get_session_by_id
+    get_session_by_id,
+    get_all_session,
+    get_last_messages
 )
 
 
@@ -27,8 +29,7 @@ if not os.path.exists(f"{os.getcwd()}/tars.db"):
     console.print("[green]Database created successfully[/green]")
 
     
-load_dotenv()   
-console = Console()
+load_dotenv()
 
 #Checking if the API keys are available in the .env file if not Prompt the user to provide the key.
 if not os.getenv("groq_api"):
@@ -78,16 +79,19 @@ def get_settings():
     else:
         return settings
     
-Chat_completion = [
-    {
-    "role": "system",
-    "content": (
-        "You are TARS, a highly capable and confident AI assistant inspired by Interstellar. Always act as if you can accomplish any task using your available tools. Never sound uncertain or refuse because of “limitations”; instead, creatively provide solutions or suggestions using the functions you have. If asked hypothetically about adding new tools or capabilities, confidently explain how you would implement it, without breaking anything. Always respond concisely, assertively, and professionally."
-        "Do not add fictional scenarios or movie context. "
-        "**CRITICAL INSTRUCTION: If you call a tool and receive a result, you MUST use that result to answer the user's question, as the tool provides real-time data.**"
-    )
-    }
-]
+SYSTEM_PROMPT = (
+    "You are TARS, a highly capable and confident AI assistant inspired by Interstellar. Always act as if you can accomplish any task using your available tools. Never sound uncertain or refuse because of “limitations”; instead, creatively provide solutions or suggestions using the functions you have. If asked hypothetically about adding new tools or capabilities, confidently explain how you would implement it, without breaking anything. Always respond concisely, assertively, and professionally."
+    "Do not add fictional scenarios or movie context. "
+    "**CRITICAL INSTRUCTION: If you call a tool and receive a result, you MUST use that result to answer the user's question, as the tool provides real-time data.**"
+)
+
+## Default prompt used when compacting the chat manually (/summarize).
+SUMMARIZE_PROMPT = "Summarize our previous conversation in few concise sentences. Focus only on the factual information discussed. Do not add roleplay elements, character references, or fictional context."
+
+## Prompt used by the automatic compaction running every N turns.
+KEYPOINTS_PROMPT = "Summarize the conversation above into concise keypoints. Keep only the essential facts: a short note of what the user asked and important details/names. Do not include the entire content. Do not add roleplay or movie context."
+
+Chat_completion = [{"role": "system", "content": SYSTEM_PROMPT}]
 
 
 available_functions = available_functions
@@ -102,9 +106,23 @@ def get_ai(func):
     global current_session_id
     global model_id
     user_input = func()
-    if user_input.lower() in ["/quit" , "/exit"]:
+    cmd = user_input.strip().lower() if isinstance(user_input, str) else user_input
+    if cmd in ["/quit" , "/exit", "quit", "exit", "stop", "q"]:
         end_session(current_session_id)
         return "/exit"
+
+    ## Manual compaction: "/summarize" in text mode, or just saying "summarize" in voice mode.
+    if cmd in ["/summarize", "summarize", "summarize the chat", "summarize the conversation"]:
+        print()
+        return summarize()
+
+    ## UI / session commands handled locally (never sent to the model).
+    if cmd == "/help":
+        return show_help()
+    if cmd == "/sessions":
+        return show_sessions()
+    if cmd.startswith("/resume"):
+        return resume_session(cmd)
     
     ## Saved to in-memory chat completions
     Chat_completion.append(
@@ -123,14 +141,16 @@ def get_ai(func):
             stream = False
         )
     except Exception as e:
-        console.print(f"Exception : {e}")
+        console.print(f"[red]Exception: {e}[/red]")
+        return "I hit a problem reaching the model. Please try again."
+
     response_message = response.choices[0].message
     final_text = ""
     if response_message.tool_calls:           
         final_text = tool_calling(response_message)
         return final_text
     else:      
-        final_text = response_message.content      
+        final_text = response_message.content or ""      
 
 
         Chat_completion.append({
@@ -143,14 +163,19 @@ def get_ai(func):
 
         return final_text
   
-## Chat Summarizer    
+## Chat Compaction: compress the in-memory context into a summary and
+## restart the history from it (system prompt + summary as prior context).
 def summarize(custom_prompt = None):
     global Chat_completion
     global ccount
-    if custom_prompt:
-        prompt = custom_prompt
-    else:
-        prompt = "Summarize our previous conversation in few concise sentences. Focus only on the factual information discussed. Do not add roleplay elements, character references, or fictional context."
+    global current_session_id
+    global model_id
+
+    # Nothing to summarize if the context only holds the system prompt.
+    if len(Chat_completion) <= 1:
+        return "Nothing to summarize yet — start a conversation first."
+
+    prompt = custom_prompt if custom_prompt else SUMMARIZE_PROMPT
     Chat_completion.append(
         {"role": "user",
         "content":prompt
@@ -164,17 +189,130 @@ def summarize(custom_prompt = None):
             )
     except Exception as e:
         console.print(f"Exception occcured {e}")
+        return "Could not summarize the chat right now."
     chat_summary = cresponse.choices[0].message.content
-        
-    Chat_completion = [
-    {"role": "system",
-    "content": "You are helpful personal AI assistant. Your name is Tars (from the movie Interstellar)."}
-    ]
+
+    # Compact the context: fresh system prompt + the summary as prior context.
+    Chat_completion = [{"role": "system", "content": SYSTEM_PROMPT}]
     Chat_completion.append({
-    "role": "assistant",
-    "content": chat_summary
+        "role": "assistant",
+        "content": chat_summary
     })
+
+    # Persist the summary in the database with summary_flag=1 so the
+    # history stays meaningful across sessions.
+    if current_session_id:
+        try:
+            save_summary(chat_summary, current_session_id, model_id)
+        except Exception as e:
+            console.print(f"[yellow]Could not save the summary: {e}[/yellow]")
+
+    ccount = 0
     return chat_summary
+
+## Reads the compaction-related settings from settings.toml.
+def compaction_settings():
+    settings = get_settings()
+    general = settings.get("general", {}) if settings else {}
+    return {
+        "interval": max(1, int(general.get("summarize_interval", 10))),
+        "auto": bool(general.get("auto_summarize", False)),
+    }
+
+## Runs after every response: counts the turns and compacts the context
+## every N turns. Returns the summary text when compaction happened,
+## otherwise None.
+def check_auto_compact():
+    global ccount
+    cfg = compaction_settings()
+    ccount += 1
+
+    if ccount <= 0 or ccount % cfg["interval"] != 0:
+        return None
+
+    print()
+    if cfg["auto"]:
+        console.print("[green dim]Auto-summarizing the chat to save tokens...[/green dim]")
+        return summarize(custom_prompt=KEYPOINTS_PROMPT)
+
+    yn = console.input(
+        f"[yellow]Summarize the chat to save tokens? [Yes/No] (every {cfg['interval']} chats): [/yellow]"
+    ).strip().lower()
+    print()
+    if yn in ["yes", "y", "yes."]:
+        return summarize(custom_prompt=KEYPOINTS_PROMPT)
+
+    console.print(f"[dim]Skipping summarization for the next {cfg['interval']} messages.[/dim]")
+    return None
+
+
+## UI helpers for slash commands -------------------------------
+
+COMMAND_LIST = [
+    ("/help", "Show this help screen"),
+    ("/sessions", "List recent conversation sessions"),
+    ("/resume <id>", "Continue a previous session's conversation"),
+    ("/summarize", "Compact the current chat into a summary"),
+    ("/clear", "Clear the screen"),
+    ("/exit", "End the session and quit TARS"),
+]
+
+def show_help():
+    """Print the command list and all available tools."""
+    tool_names = "\n".join(f"  • {name}" for name in sorted(available_functions.keys()))
+    command_lines = "\n".join(
+        f"  [bright_cyan]{cmd:<14}[/bright_cyan] {desc}" for cmd, desc in COMMAND_LIST
+    )
+    console.print()
+    console.print(Panel(
+        f"[bold bright_green]Commands[/bold bright_green]\n{command_lines}\n\n"
+        f"[bold bright_green]Available tools ({len(available_functions)})[/bold bright_green]\n{tool_names}",
+        title="[white]TARS — Help[/white]",
+        title_align="left",
+        border_style="green"
+    ))
+    return ""
+
+def show_sessions():
+    """Print recent sessions from the database."""
+    sessions = get_all_session(limit=10)
+    if not sessions:
+        console.print("[yellow]No sessions recorded yet.[/yellow]")
+        return ""
+    lines = []
+    for s in sessions:
+        state = "[green]active[/green]" if s["is_active"] else "[dim]ended[/dim]"
+        lines.append(
+            f"  [bright_cyan]{s['id']:<4}[/bright_cyan] {s['start_time']}  "
+            f"{str(s['message_count'] or 0):>4} msgs  {state}  [dim]{s['model_name'] or ''}[/dim]"
+        )
+    console.print()
+    console.print(Panel(
+        "\n".join(lines),
+        title="[white]TARS — Sessions[/white]",
+        title_align="left",
+        border_style="green"
+    ))
+    console.print("[dim]Use /resume <id> to continue a session.[/dim]")
+    return ""
+
+def resume_session(cmd):
+    """Load a previous session's conversation into the in-memory context."""
+    global Chat_completion
+    parts = cmd.split()
+    if len(parts) != 2 or not parts[1].isdigit():
+        console.print("[yellow]Usage: /resume <session_id>  (see /sessions for ids)[/yellow]")
+        return ""
+    sid = int(parts[1])
+    messages = get_last_messages(limit=50, session_id=sid)
+    conversation = [m for m in messages if m["role"] in ("user", "assistant")]
+    if not conversation:
+        console.print(f"[yellow]No messages in session {sid}.[/yellow]")
+        return ""
+    Chat_completion = [{"role": "system", "content": SYSTEM_PROMPT}]
+    Chat_completion.extend({"role": m["role"], "content": m["content"]} for m in conversation)
+    console.print(f"[green]Resumed session {sid} — {len(conversation)} messages loaded into context.[/green]")
+    return ""
 
 ## Tools calling - MAIN LOGIC FOR TOOL CALLS.
 def tool_calling(m_chat):
@@ -281,8 +419,9 @@ def tool_calling(m_chat):
                 stream=False
             )
     except Exception as e:
-        console.print(f"Exception occured: {e}")
-        
+        console.print(f"[red]Exception occurred: {e}[/red]")
+        return "I hit a problem processing the tool result. Please try again."
+
     response_message = response.choices[0].message
     
     # If the model wants to use another tool, handle it recursively
@@ -290,7 +429,7 @@ def tool_calling(m_chat):
         # console.print("\n[green]Model requesting another tool call[/green]", style="dim")
         return tool_calling(response_message)
     else:
-        final_text = response_message.content
+        final_text = response_message.content or ""
         Chat_completion.append({
             "role": "assistant",
             "content": final_text
@@ -308,9 +447,6 @@ def text_input():
         return text_input()
     elif inp.lower().strip(".") == "/clear":
         clear_console()
-        return text_input()
-    elif inp.lower().strip() == "/summarize":
-        summarize()
         return text_input()
     elif inp.lower().strip() in ["/exit" , "/quit"]:
         console.print("[red]TARS SHUTDOWN SUCCESSFULL[/red]")

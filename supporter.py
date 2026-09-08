@@ -12,6 +12,16 @@ from tools.sptest import sptest
 from tools.memory import *
 from tools.app_open import software_opener
 from tools.web_browser import open_browser
+from tools.browser_control import (
+    browser_navigate,
+    browser_extract,
+    browser_search,
+    browser_click,
+    browser_fill,
+    browser_screenshot,
+    browser_close,
+)
+from tools.system_info import system_info
 
 console = Console()
 
@@ -45,7 +55,15 @@ available_functions = {
     "sptest": sptest,
     "manage_memory":manage_memory,
     "software_opener": software_opener,
-    "open_browser": open_browser
+    "open_browser": open_browser,
+    "browser_navigate": browser_navigate,
+    "browser_extract": browser_extract,
+    "browser_search": browser_search,
+    "browser_click": browser_click,
+    "browser_fill": browser_fill,
+    "browser_screenshot": browser_screenshot,
+    "browser_close": browser_close,
+    "system_info": system_info,
 }
 
 def tars_settings():

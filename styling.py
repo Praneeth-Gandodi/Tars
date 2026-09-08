@@ -1,9 +1,6 @@
 from rich.console import Console
-from rich.markdown import Markdown
 from dotenv import load_dotenv
-from supporter import clear_console
-from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit.filters import is_done
+from supporter import clear_console, available_functions
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.styles import Style
 import os
@@ -27,6 +24,7 @@ def starting():
 
     console.print(f"[bright_cyan]{TARS_ASCII_LOGO}[/bright_cyan]", justify="left")
     console.print(f"[green]● Model: [aquamarine1]{model}[/aquamarine1][/green]")
+    console.print(f"[green]● Tools: [aquamarine1]{len(available_functions)}[/aquamarine1] loaded    Type [bright_cyan]/help[/bright_cyan] to see commands[/green]")
     
 def input_type():
     try:

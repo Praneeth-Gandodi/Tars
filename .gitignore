@@ -9,8 +9,9 @@ tools/attendance.py
 token_check.py
 tokens_check.txt
 tars.db
-tools/browser_control.py
 tools/settings.toml
+*.wav
+screenshots/
 Local_LLM.py
 Markdown/
 tools/web_crawl.py

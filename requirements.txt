@@ -12,8 +12,11 @@ wikipedia
 speedtest-cli
 prompt_toolkit
 pytz
-ffmpeg
 piper-tts
-tomlkit 
+tomlkit
 AppOpener
+playsound3
+sounddevice
+numpy
+playwright
 git+https://github.com/Praneeth-Gandodi/markrender

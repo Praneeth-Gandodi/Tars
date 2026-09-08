@@ -8,7 +8,12 @@
 
 display_function_response = 1
 
-display_summeraize = false
+# Compaction behavior:
+#   auto_summarize = false -> ask the user before compacting every `summarize_interval` chats
+#   auto_summarize = true  -> compact silently without asking
+auto_summarize = false
+summarize_interval = 10
+
 default_mode = 1
 
 [tool_settings]
