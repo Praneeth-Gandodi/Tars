@@ -72,6 +72,15 @@ ensure_uv() {
     command_exists uv
 }
 
+# True when the chosen interpreter is a standalone uv build (ships its own
+# headers — no system -dev package needed or wanted).
+is_uv_python() {
+    case "$PYTHON" in
+        *"/uv/python/"*|*".local/share/uv"*) return 0 ;;
+    esac
+    return 1
+}
+
 # Installs Homebrew if missing (macOS) and puts it on this session's PATH
 # (handles both Apple Silicon and Intel locations).
 ensure_brew() {
@@ -244,6 +253,12 @@ if [ "$DO_SYSTEM" -eq 1 ]; then
         if [ -n "$PYVER" ]; then
             sudo apt-get install -y "python${PYVER}-venv" || \
                 warn "Could not install python${PYVER}-venv - venv creation may fail."
+            # PyAudio ships no wheel for 3.12+ Linux: it compiles from source
+            # and needs the interpreter headers (Python.h).
+            if ! is_uv_python; then
+                sudo apt-get install -y "python${PYVER}-dev" || \
+                    warn "Could not install python${PYVER}-dev - PyAudio build may fail."
+            fi
         fi
         sudo apt-get install -y --no-install-recommends \
             ffmpeg \
@@ -260,6 +275,11 @@ if [ "$DO_SYSTEM" -eq 1 ]; then
     elif command_exists dnf; then
         sudo dnf groupinstall -y "Development Tools"
         sudo dnf install -y ffmpeg portaudio-devel libgomp python3-pip
+        # Headers for source builds (PyAudio), matching the Python in use.
+        if [ -n "$PYVER" ] && ! is_uv_python; then
+            sudo dnf install -y "python${PYVER}-devel" || \
+                warn "Could not install python${PYVER}-devel - PyAudio build may fail."
+        fi
         ok "Installed dnf packages (ffmpeg, portaudio, libgomp)."
 
     elif command_exists pacman; then

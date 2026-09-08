@@ -53,7 +53,8 @@ Paste **one line** into your terminal. That's it — the installer:
    (e.g. 3.14) are avoided, since the audio deps are validated on 3.12/3.13.
 3. Installs the **system libraries** TARS needs (ffmpeg, audio, browser deps) —
    including the venv package matching its Python, so `python -m venv` never
-   fails with "ensurepip is not available".
+   fails with "ensurepip is not available", and the Python dev headers, so
+   PyAudio (no Linux wheel for 3.12+) can compile from source.
 4. Creates an isolated Python **virtual environment** (`.venv`).
 5. Installs **all Python dependencies** — GPU-aware: full CUDA PyTorch when an
    NVIDIA GPU is detected, tiny CPU-only PyTorch otherwise (skips ~1.5GB of
@@ -292,6 +293,7 @@ automatically the first time you enter a voice mode. Job done.
 | `python` is not recognized (Windows, manual setup) | The installers install Python automatically. For manual setup: install Python 3.12 with **Add to PATH** ticked, open a **new** terminal. |
 | `ensurepip is not available` / venv creation fails (Debian/Ubuntu) | Handled automatically — the installer puts in the venv package matching its Python (`python3.X-venv`) and retries via `uv` if needed. Manual setup: `sudo apt install -y python3.X-venv` (X = your Python's minor version). |
 | Installer pulled huge `nvidia-*`/CUDA packages but I have no GPU | Re-run the installer — it detects GPUs and swaps CUDA PyTorch for the CPU-only build automatically (reclaims ~1.5GB). |
+| PyAudio build fails: `Python.h: No such file or directory` (Linux) | Missing interpreter headers. Handled automatically — the installer puts in `python3.X-dev` matching its Python. Manual setup: `sudo apt install -y python3.X-dev portaudio19-dev build-essential` (X = your Python's minor version). |
 | pip errors about `markrender` | It's installed from GitHub — you need git + network: `pip install -r requirements.txt` again. |
 | `AppOpener` / apps tool fails on Linux | By design — the app-opener tool is **Windows-only**. Other tools are unaffected. |
 | Voice picks up nothing | Check `.env` key; grant mic permission; ensure a default mic set. On Linux check `pactl list sources`. |
