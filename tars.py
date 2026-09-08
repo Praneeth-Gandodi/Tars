@@ -98,6 +98,7 @@ def tars():
                 tts_pipeline(text=status, interrupt_event=interrupt_event)
         except Exception as e:
             console.print(status)
+        print()  # blank line after the reply, before the next prompt
 
         # After every response, maybe compact the context (runs every N turns).
         try:
