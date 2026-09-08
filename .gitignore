@@ -12,6 +12,7 @@ tars.db
 tools/settings.toml
 *.wav
 screenshots/
+Tars_submission.zip
 Local_LLM.py
 Markdown/
 tools/web_crawl.py
