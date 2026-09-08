@@ -18,6 +18,8 @@ CHUNK = 2048  # frames per write (~93 ms) — keeps interruption responsive
 def clean_text(text):
     text = re.sub(r'[*_]{1,3}', '', text)
 
+    text = re.sub(r'`{1,3}', '', text)
+
     text = re.sub(r'#+\s+', '', text)
 
     text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)

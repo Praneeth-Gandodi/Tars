@@ -94,6 +94,35 @@ SYSTEM_PROMPT = (
     "**CRITICAL INSTRUCTION: If you call a tool and receive a result, you MUST use that result to answer the user's question, as the tool provides real-time data.**"
 )
 
+## Extra instruction appended to the system prompt in Voice → Voice mode so
+## replies come out speakable: plain sentences, no markdown/symbols, short.
+TTS_STYLE_PROMPT = (
+    "VOICE REPLY RULES (your reply will be spoken aloud by a speech synthesizer — obey strictly): "
+    "Write plain sentences only. NO markdown (no *, #, backticks, tables, links, or URLs), NO emojis, "
+    "NO symbols like &, %, $, /, or backslash. "
+    "Write everything exactly as it should be HEARD, using normal words and normal punctuation for pauses. "
+    "Never describe actions or sounds (no *sighs*, no [laughs], no stage directions). "
+    "Keep it SHORT and listenable: 1-3 sentences for simple answers, at most ~60 words, "
+    "unless the user explicitly asks for more detail."
+)
+
+_tts_style_enabled = False
+
+
+def enable_tts_style():
+    """Switch the conversation to TTS-friendly replies (Voice → Voice mode).
+
+    Folds TTS_STYLE_PROMPT into SYSTEM_PROMPT itself (not just the live
+    context) so the instruction survives chat compaction, which rebuilds the
+    context from SYSTEM_PROMPT. Safe to call more than once.
+    """
+    global SYSTEM_PROMPT, _tts_style_enabled, Chat_completion
+    if not _tts_style_enabled:
+        SYSTEM_PROMPT = f"{SYSTEM_PROMPT}\n{TTS_STYLE_PROMPT}"
+        _tts_style_enabled = True
+    if Chat_completion and Chat_completion[0].get("role") == "system":
+        Chat_completion[0]["content"] = SYSTEM_PROMPT
+
 ## Default prompt used when compacting the chat manually (/summarize).
 SUMMARIZE_PROMPT = "Summarize our previous conversation in few concise sentences. Focus only on the factual information discussed. Do not add roleplay elements, character references, or fictional context."
 
